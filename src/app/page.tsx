@@ -1,65 +1,269 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useMemo, useState } from "react";
+import { Search, Plus, LayoutGrid, Rows3 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+} from "@/components/ui/select";
+import { ProductCard } from "@/components/product-card";
+import { ProductRow } from "@/components/product-row";
+import { ProductDialog } from "@/components/product-dialog";
+import { PRODUCT_TYPES, PRODUCT_STATUSES, SITE_LABELS } from "@/lib/constants";
+import type { GameSummary, Product } from "@/lib/types";
+import { cn } from "@/lib/utils";
+
+type ViewMode = "marketplace" | "spreadsheet";
+type SortMode = "newest" | "title" | "price-low" | "price-high";
+
+export default function CatalogPage() {
+  const [products, setProducts] = useState<Product[] | null>(null);
+  const [games, setGames] = useState<GameSummary[]>([]);
+  const [view, setView] = useState<ViewMode>("marketplace");
+
+  const [query, setQuery] = useState("");
+  const [gameFilter, setGameFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [domainFilter, setDomainFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [freeOnly, setFreeOnly] = useState(false);
+  const [sort, setSort] = useState<SortMode>("newest");
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<Product | null>(null);
+
+  useEffect(() => {
+    fetch("/api/products").then((r) => r.json()).then(setProducts);
+    fetch("/api/games").then((r) => r.json()).then(setGames);
+  }, []);
+
+  const domains = useMemo(() => {
+    const set = new Set((products ?? []).map((p) => p.domain));
+    return Array.from(set).sort();
+  }, [products]);
+
+  // Base UI's <Select.Value> only knows an item's label once the popup has
+  // mounted, unless the root is given a value->label map up front.
+  const gameItems = useMemo(
+    () => ({ all: "All games", ...Object.fromEntries(games.map((g) => [String(g.id), g.name])) }),
+    [games]
+  );
+  const typeItems = useMemo(
+    () => ({ all: "All types", ...Object.fromEntries(PRODUCT_TYPES.map((t) => [t.value, t.label])) }),
+    []
+  );
+  const domainItems = useMemo(
+    () => ({ all: "All sources", ...Object.fromEntries(domains.map((d) => [d, SITE_LABELS[d] ?? d])) }),
+    [domains]
+  );
+  const statusItems = useMemo(
+    () => ({ all: "All statuses", ...Object.fromEntries(PRODUCT_STATUSES.map((s) => [s.value, s.label])) }),
+    []
+  );
+  const sortItems = { newest: "Newest", title: "Title A-Z", "price-low": "Price: low", "price-high": "Price: high" };
+
+  const filtered = useMemo(() => {
+    if (!products) return [];
+    const q = query.trim().toLowerCase();
+
+    let list = products.filter((p) => {
+      if (gameFilter !== "all" && !p.games.some((g) => String(g.id) === gameFilter)) return false;
+      if (typeFilter !== "all" && p.type !== typeFilter) return false;
+      if (domainFilter !== "all" && p.domain !== domainFilter) return false;
+      if (statusFilter !== "all" && p.status !== statusFilter) return false;
+      if (freeOnly && !p.isFree) return false;
+      if (q) {
+        const hay = [p.title, p.creator ?? "", p.notes ?? "", ...p.games.map((g) => g.name)].join(" ").toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+
+    list = [...list].sort((a, b) => {
+      switch (sort) {
+        case "title": return a.title.localeCompare(b.title);
+        case "price-low": return (a.isFree ? 0 : a.price ?? Infinity) - (b.isFree ? 0 : b.price ?? Infinity);
+        case "price-high": return (b.isFree ? 0 : b.price ?? -Infinity) - (a.isFree ? 0 : a.price ?? -Infinity);
+        default: return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+    });
+
+    return list;
+  }, [products, query, gameFilter, typeFilter, domainFilter, statusFilter, freeOnly, sort]);
+
+  const openAdd = () => { setEditing(null); setDialogOpen(true); };
+  const openEdit = (p: Product) => { setEditing(p); setDialogOpen(true); };
+
+  const upsertLocal = (p: Product) => {
+    setProducts((prev) => {
+      if (!prev) return [p];
+      const exists = prev.some((x) => x.id === p.id);
+      return exists ? prev.map((x) => (x.id === p.id ? p : x)) : [p, ...prev];
+    });
+  };
+  const removeLocal = (id: number) => setProducts((prev) => prev?.filter((p) => p.id !== id) ?? prev);
+
+  const hasAnyProducts = (products?.length ?? 0) > 0;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+        <div>
+          <h1 className="font-display font-extrabold uppercase text-3xl tracking-tight leading-none">Catalog</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {products === null ? "Loading…" : `${filtered.length} of ${products.length} print${products.length === 1 ? "" : "s"}`}
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <Button onClick={openAdd} className="gap-1.5 shrink-0">
+          <Plus className="size-4" /> Add a print
+        </Button>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Input
+            placeholder="Search prints, games, notes…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="pl-9 font-mono"
+          />
         </div>
-      </main>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Select items={gameItems} value={gameFilter} onValueChange={(v) => setGameFilter(v as string)}>
+            <SelectTrigger className="w-[160px]"><SelectValue placeholder="All games" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All games</SelectItem>
+              {games.map((g) => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+
+          <Select items={typeItems} value={typeFilter} onValueChange={(v) => setTypeFilter(v as string)}>
+            <SelectTrigger className="w-[150px]"><SelectValue placeholder="All types" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              {PRODUCT_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+
+          <Select items={domainItems} value={domainFilter} onValueChange={(v) => setDomainFilter(v as string)}>
+            <SelectTrigger className="w-[150px]"><SelectValue placeholder="All sources" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All sources</SelectItem>
+              {domains.map((d) => <SelectItem key={d} value={d}>{SITE_LABELS[d] ?? d}</SelectItem>)}
+            </SelectContent>
+          </Select>
+
+          <Select items={statusItems} value={statusFilter} onValueChange={(v) => setStatusFilter(v as string)}>
+            <SelectTrigger className="w-[150px]"><SelectValue placeholder="All statuses" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              {PRODUCT_STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+
+          <button
+            onClick={() => setFreeOnly((f) => !f)}
+            className={cn(
+              "text-sm px-3 h-8 rounded-lg border transition-colors",
+              freeOnly ? "bg-primary text-primary-foreground border-primary" : "border-input text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Free only
+          </button>
+
+          <Select items={sortItems} value={sort} onValueChange={(v) => setSort(v as SortMode)}>
+            <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">Newest</SelectItem>
+              <SelectItem value="title">Title A-Z</SelectItem>
+              <SelectItem value="price-low">Price: low</SelectItem>
+              <SelectItem value="price-high">Price: high</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <div className="ml-auto flex items-center gap-0.5 border border-input rounded-lg p-0.5">
+            <button
+              onClick={() => setView("marketplace")}
+              aria-label="Marketplace view"
+              className={cn("p-1.5 rounded-md", view === "marketplace" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
+            >
+              <LayoutGrid className="size-4" />
+            </button>
+            <button
+              onClick={() => setView("spreadsheet")}
+              aria-label="Spreadsheet view"
+              className={cn("p-1.5 rounded-md", view === "spreadsheet" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
+            >
+              <Rows3 className="size-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {products === null && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+          {Array.from({ length: 10 }).map((_, i) => <Skeleton key={i} className="aspect-[4/3.6] rounded-lg" />)}
+        </div>
+      )}
+
+      {products !== null && !hasAnyProducts && (
+        <div className="text-center py-20 border border-dashed border-border rounded-lg bed-grid">
+          <p className="font-display font-bold text-xl uppercase mb-1">Nothing saved yet</p>
+          <p className="text-sm text-muted-foreground mb-4 max-w-sm mx-auto">
+            Connect your BGG collection to pull in the community 3D-print index, or add your first find by pasting a link.
+          </p>
+          <div className="flex gap-2 justify-center">
+            <Button onClick={openAdd} className="gap-1.5"><Plus className="size-4" /> Add a print</Button>
+            <Button variant="outline" nativeButton={false} render={<a href="/connect" />}>Connect BGG</Button>
+          </div>
+        </div>
+      )}
+
+      {products !== null && hasAnyProducts && filtered.length === 0 && (
+        <div className="text-center py-16 text-muted-foreground">
+          <p>No prints match those filters.</p>
+        </div>
+      )}
+
+      {filtered.length > 0 && view === "marketplace" && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+          {filtered.map((p) => <ProductCard key={p.id} product={p} onClick={() => openEdit(p)} />)}
+        </div>
+      )}
+
+      {filtered.length > 0 && view === "spreadsheet" && (
+        <div className="border border-border rounded-lg overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-border text-xs uppercase tracking-wide text-muted-foreground font-mono">
+                <th className="py-2 pl-3 pr-2"></th>
+                <th className="py-2 pr-3">Print</th>
+                <th className="py-2 pr-3">Games</th>
+                <th className="py-2 pr-3">Type</th>
+                <th className="py-2 pr-3">Status</th>
+                <th className="py-2 pr-3">Price</th>
+                <th className="py-2 pr-3">Rating</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((p) => <ProductRow key={p.id} product={p} onClick={() => openEdit(p)} />)}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <ProductDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        games={games}
+        product={editing}
+        onSaved={upsertLocal}
+        onDeleted={removeLocal}
+      />
     </div>
   );
 }

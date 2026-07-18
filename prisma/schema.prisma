@@ -1,0 +1,73 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// A board game from the connected BGG collection.
+model Game {
+  id            Int      @id @default(autoincrement())
+  bggId         Int      @unique
+  name          String
+  yearPublished Int?
+  thumbnail     String?
+  image         String?
+  minPlayers    Int?
+  maxPlayers    Int?
+  inCollection  Boolean  @default(true)
+  addedAt       DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastScannedAt DateTime? // last time "Search all sites" ran for this game
+
+  products Product[]
+}
+
+// A saved 3D-printable accessory: an insert, organizer, miniature proxy,
+// terrain piece, token replacement, etc. found on any print-sharing site.
+model Product {
+  id           Int      @id @default(autoincrement())
+  url          String   @unique
+  title        String
+  description  String?
+  thumbnailUrl String?
+  domain       String   // host the link points to, e.g. "thingiverse.com"
+  siteName     String?  // human label, e.g. "Thingiverse"
+  type         String   @default("other") // insert, organizer, miniature, terrain, token, tuckbox, dice-tower, other
+  creator      String?
+  price        Float?
+  currency     String?  @default("USD")
+  isFree       Boolean  @default(false)
+  status       String   @default("wishlist") // wishlist | queued | printed | installed
+  rating       Int?     // 1-5 personal usefulness rating
+  notes        String?
+  tags         String?  // JSON-encoded string[]
+  source       String   @default("manual") // manual | geeklist_import
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  games Game[]
+}
+
+// Single-row settings for the connected BGG collection. This is a personal,
+// single-household tool, so the BGG session lives here rather than behind
+// a full multi-user auth system.
+model Settings {
+  id                 String    @id @default("singleton")
+  bggUsername        String?
+  bggSessionId       String?
+  lastCollectionSync DateTime?
+  lastGeeklistSync   DateTime?
+
+  // Optional per-site credentials for automatic search. Each is free/quick
+  // to obtain but requires the user to sign up on that site's dev portal.
+  thingiverseToken String? // Thingiverse app token (Bearer)
+  cultsUsername    String? // Cults3D handle, paired with cultsApiKey for Basic auth
+  cultsApiKey      String?
+  etsyApiKey       String? // Etsy Open API v3 keystring, sent as x-api-key
+}

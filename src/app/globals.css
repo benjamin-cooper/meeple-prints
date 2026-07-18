@@ -1,26 +1,131 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-mono);
+  --font-display: var(--font-display);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Filament status palette, named after real spool colors instead of
+     generic red/yellow/green, so a status reads as "what's next" rather
+     than "good/bad". */
+  --color-status-wishlist: var(--status-wishlist);
+  --color-status-queued: var(--status-queued);
+  --color-status-printed: var(--status-printed);
+  --color-status-installed: var(--status-installed);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  /* Cutting-mat sage-gray, not the default cream. A workshop surface,
+     not a coffee-shop one. */
+  --background: #e7e9e3;
+  --foreground: #1e2124;
+  --card: #fdfdfb;
+  --card-foreground: #1e2124;
+  --popover: #fdfdfb;
+  --popover-foreground: #1e2124;
+
+  /* Safety-orange: the color on the printer, the tape measure, the
+     filament spool you reach for first. */
+  --primary: #e8580c;
+  --primary-foreground: #fdf7f1;
+  --secondary: #edeee7;
+  --secondary-foreground: #1e2124;
+  --muted: #edeee7;
+  --muted-foreground: #5b6058;
+  --accent: #dcefec;
+  --accent-foreground: #114f49;
+  --destructive: #b23a2e;
+  --border: #d3d6cc;
+  --input: #d3d6cc;
+  --ring: #e8580c;
+  --radius: 0.5rem;
+
+  --status-wishlist: #a39a89;
+  --status-queued: #e8580c;
+  --status-printed: #1b7a72;
+  --status-installed: #a8791f;
+}
+
+.dark {
+  --background: #16181a;
+  --foreground: #edefea;
+  --card: #1d2022;
+  --card-foreground: #edefea;
+  --popover: #1d2022;
+  --popover-foreground: #edefea;
+
+  --primary: #ff6a1f;
+  --primary-foreground: #1d1200;
+  --secondary: #24272a;
+  --secondary-foreground: #edefea;
+  --muted: #24272a;
+  --muted-foreground: #9ba39a;
+  --accent: #1e3a37;
+  --accent-foreground: #7fe0d4;
+  --destructive: #e15b4c;
+  --border: #2c302c;
+  --input: #2c302c;
+  --ring: #ff6a1f;
+
+  --status-wishlist: #8a8272;
+  --status-queued: #ff6a1f;
+  --status-printed: #35c6ba;
+  --status-installed: #e0a93a;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* A faint print-bed grid: the one decorative flourish on the page shell. */
+.bed-grid {
+  background-image:
+    linear-gradient(to right, var(--border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+  background-size: 28px 28px;
+  background-position: -1px -1px;
+  opacity: 0.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

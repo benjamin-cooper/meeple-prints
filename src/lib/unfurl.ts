@@ -44,9 +44,33 @@ function decodeHtmlEntities(s: string): string {
     .trim();
 }
 
+/**
+ * Blocks the obvious SSRF targets: loopback, link-local (which is where
+ * cloud metadata endpoints like 169.254.169.254 live), and private ranges.
+ * This checks the literal hostname/IP only, not where a domain's DNS
+ * actually resolves, so it isn't a defense against DNS rebinding, just
+ * against someone directly pasting an internal address or a redirect to
+ * one.
+ */
+function isBlockedHost(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  if (host === "localhost" || host.endsWith(".local") || host === "::1") return true;
+
+  const m = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (m) {
+    const [a, b] = [Number(m[1]), Number(m[2])];
+    if (a === 127 || a === 10 || a === 0) return true;
+    if (a === 169 && b === 254) return true;
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    if (a === 192 && b === 168) return true;
+  }
+  return false;
+}
+
 export async function unfurlUrl(rawUrl: string): Promise<UnfurledLink> {
   const url = new URL(rawUrl);
   const domain = url.hostname.replace(/^www\./, "");
+  if (isBlockedHost(url.hostname)) throw new Error("That host isn't allowed.");
 
   const res = await fetch(rawUrl, {
     headers: {
@@ -55,6 +79,10 @@ export async function unfurlUrl(rawUrl: string): Promise<UnfurledLink> {
     },
     signal: AbortSignal.timeout(10_000),
   });
+
+  // Re-check post-redirect: fetch() follows redirects by default, so the
+  // final destination could differ from the URL that was validated above.
+  if (isBlockedHost(new URL(res.url).hostname)) throw new Error("That host isn't allowed.");
 
   if (!res.ok) throw new Error(`Couldn't load that page (${res.status})`);
   const html = await res.text();

@@ -8,9 +8,15 @@
 import { bggLogin } from "@/lib/bgg";
 import { prisma } from "@/lib/prisma";
 import { createSessionToken, SESSION_COOKIE, SESSION_MAX_AGE_SECONDS } from "@/lib/auth";
+import { isRateLimited } from "@/lib/rate-limit";
 import type { NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  if (isRateLimited(`login:${ip}`)) {
+    return Response.json({ error: "Too many attempts. Try again later." }, { status: 429 });
+  }
+
   const { username, password } = await request.json();
   if (!username || !password) {
     return Response.json({ error: "Username and password are required." }, { status: 400 });

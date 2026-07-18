@@ -25,9 +25,11 @@ export async function POST() {
   try {
     const items = await getGeeklistItems(PRINTS_GEEKLIST_ID, settings.bggSessionId);
 
-    let created = 0;
+    // Flatten every item's links into url -> the set of games it applies
+    // to, deduping repeats up front instead of writing the same row twice.
+    const gameIdsByUrl = new Map<string, Set<number>>();
+    const domainByUrl = new Map<string, string>();
     let skippedNoGame = 0;
-    let skippedDuplicate = 0;
 
     for (const item of items) {
       if (!item.bggId || !gameByBggId.has(item.bggId)) {
@@ -35,32 +37,65 @@ export async function POST() {
         continue;
       }
       const game = gameByBggId.get(item.bggId)!;
-
       for (const link of item.links) {
-        const existing = await prisma.product.findUnique({ where: { url: link.url } });
-        if (existing) {
-          if (!(await prisma.game.findFirst({ where: { id: game.id, products: { some: { id: existing.id } } } }))) {
-            await prisma.product.update({ where: { id: existing.id }, data: { games: { connect: { id: game.id } } } });
-          } else {
-            skippedDuplicate++;
-          }
-          continue;
+        if (!gameIdsByUrl.has(link.url)) {
+          gameIdsByUrl.set(link.url, new Set());
+          domainByUrl.set(link.url, link.domain);
         }
-
-        await prisma.product.create({
-          data: {
-            url: link.url,
-            title: guessTitleFromUrl(link.url, link.domain),
-            domain: link.domain,
-            siteName: SITE_LABELS[link.domain] ?? link.domain,
-            source: "geeklist_import",
-            games: { connect: { id: game.id } },
-          },
-        });
-        created++;
+        gameIdsByUrl.get(link.url)!.add(game.id);
       }
     }
 
+    // One batched read instead of a findUnique per link.
+    const allUrls = Array.from(gameIdsByUrl.keys());
+    const existingProducts = allUrls.length
+      ? await prisma.product.findMany({
+          where: { url: { in: allUrls } },
+          include: { games: { select: { id: true } } },
+        })
+      : [];
+    const existingByUrl = new Map(existingProducts.map((p) => [p.url, p]));
+
+    let created = 0;
+    let skippedDuplicate = 0;
+    const writes: Promise<unknown>[] = [];
+
+    for (const [url, gameIds] of gameIdsByUrl) {
+      const existing = existingByUrl.get(url);
+      if (existing) {
+        const alreadyConnected = new Set(existing.games.map((g) => g.id));
+        const toConnect = Array.from(gameIds).filter((id) => !alreadyConnected.has(id));
+        if (toConnect.length === 0) {
+          skippedDuplicate++;
+          continue;
+        }
+        // Different product row per write, safe to run alongside the rest.
+        writes.push(
+          prisma.product.update({
+            where: { id: existing.id },
+            data: { games: { connect: toConnect.map((id) => ({ id })) } },
+          })
+        );
+        continue;
+      }
+
+      const domain = domainByUrl.get(url)!;
+      writes.push(
+        prisma.product.create({
+          data: {
+            url,
+            title: guessTitleFromUrl(url, domain),
+            domain,
+            siteName: SITE_LABELS[domain] ?? domain,
+            source: "geeklist_import",
+            games: { connect: Array.from(gameIds).map((id) => ({ id })) },
+          },
+        })
+      );
+      created++;
+    }
+
+    await Promise.all(writes);
     await prisma.settings.update({ where: { id: "singleton" }, data: { lastGeeklistSync: new Date() } });
 
     return Response.json({ itemsScanned: items.length, created, skippedNoGame, skippedDuplicate });

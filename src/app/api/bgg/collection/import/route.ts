@@ -17,25 +17,29 @@ export async function POST() {
   try {
     const games = await getBggCollection(settings.bggUsername, settings.bggSessionId);
 
-    for (const g of games) {
-      await prisma.game.upsert({
-        where: { bggId: g.bggId },
-        update: {
-          name: g.name,
-          yearPublished: g.yearPublished,
-          thumbnail: g.thumbnail,
-          image: g.image,
-          inCollection: true,
-        },
-        create: {
-          bggId: g.bggId,
-          name: g.name,
-          yearPublished: g.yearPublished,
-          thumbnail: g.thumbnail,
-          image: g.image,
-        },
-      });
-    }
+    // Each upsert targets a distinct bggId, so these are safe to run
+    // concurrently instead of one round trip at a time.
+    await Promise.all(
+      games.map((g) =>
+        prisma.game.upsert({
+          where: { bggId: g.bggId },
+          update: {
+            name: g.name,
+            yearPublished: g.yearPublished,
+            thumbnail: g.thumbnail,
+            image: g.image,
+            inCollection: true,
+          },
+          create: {
+            bggId: g.bggId,
+            name: g.name,
+            yearPublished: g.yearPublished,
+            thumbnail: g.thumbnail,
+            image: g.image,
+          },
+        })
+      )
+    );
 
     const importedIds = new Set(games.map((g) => g.bggId));
     const existing = await prisma.game.findMany({ where: { inCollection: true } });

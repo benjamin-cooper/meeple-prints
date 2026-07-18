@@ -25,7 +25,7 @@ interface FlatResult extends ProviderResult {
 
 type SortMode = "relevance" | "price-low" | "price-high";
 
-const SORT_ITEMS = { relevance: "Best match", "price-low": "Price: low", "price-high": "Price: high" };
+const SORT_ITEMS = { relevance: "Best Match", "price-low": "Price: Low", "price-high": "Price: High" };
 
 /**
  * Merges every provider's hits into one filterable list, the same shape as
@@ -128,15 +128,15 @@ export function SearchResultsAggregator({
                 freeOnly ? "bg-primary text-primary-foreground border-primary" : "border-input text-muted-foreground hover:text-foreground"
               )}
             >
-              Free only
+              Free Only
             </button>
 
             <Select items={SORT_ITEMS} value={sort} onValueChange={(v) => setSort(v as SortMode)}>
               <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="relevance">Best match</SelectItem>
-                <SelectItem value="price-low">Price: low</SelectItem>
-                <SelectItem value="price-high">Price: high</SelectItem>
+                <SelectItem value="relevance">Best Match</SelectItem>
+                <SelectItem value="price-low">Price: Low</SelectItem>
+                <SelectItem value="price-high">Price: High</SelectItem>
               </SelectContent>
             </Select>
 

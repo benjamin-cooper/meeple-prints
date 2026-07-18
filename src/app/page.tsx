@@ -62,7 +62,7 @@ export default function CatalogPage() {
     () => ({ all: "All statuses", ...Object.fromEntries(PRODUCT_STATUSES.map((s) => [s.value, s.label])) }),
     []
   );
-  const sortItems = { newest: "Newest", title: "Title A-Z", "price-low": "Price: low", "price-high": "Price: high" };
+  const sortItems = { newest: "Newest", title: "Title A-Z", "price-low": "Price: Low", "price-high": "Price: High" };
 
   const filtered = useMemo(() => {
     if (!products) return [];
@@ -172,7 +172,7 @@ export default function CatalogPage() {
               freeOnly ? "bg-primary text-primary-foreground border-primary" : "border-input text-muted-foreground hover:text-foreground"
             )}
           >
-            Free only
+            Free Only
           </button>
 
           <Select items={sortItems} value={sort} onValueChange={(v) => setSort(v as SortMode)}>
@@ -180,8 +180,8 @@ export default function CatalogPage() {
             <SelectContent>
               <SelectItem value="newest">Newest</SelectItem>
               <SelectItem value="title">Title A-Z</SelectItem>
-              <SelectItem value="price-low">Price: low</SelectItem>
-              <SelectItem value="price-high">Price: high</SelectItem>
+              <SelectItem value="price-low">Price: Low</SelectItem>
+              <SelectItem value="price-high">Price: High</SelectItem>
             </SelectContent>
           </Select>
 

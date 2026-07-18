@@ -196,7 +196,7 @@ export default function ConnectPage() {
                   p.configured ? "bg-status-printed/15 text-status-printed" : "bg-muted text-muted-foreground"
                 )}>
                   {p.configured ? <Check className="size-3" /> : <X className="size-3" />}
-                  {p.configured ? "Configured" : "Not configured"}
+                  {p.configured ? "Configured" : "Not Configured"}
                 </span>
               </div>
               {!p.configured && <p className="text-xs text-muted-foreground">{p.instructions}</p>}

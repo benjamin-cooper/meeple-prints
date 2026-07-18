@@ -15,22 +15,22 @@ export const FREE_BY_DEFAULT_DOMAINS = new Set([
 ]);
 
 export const PRODUCT_TYPES = [
-  { value: "insert", label: "Insert / organizer" },
-  { value: "tuckbox", label: "Tuckbox / card box" },
-  { value: "dice-tower", label: "Dice tower / tray" },
-  { value: "miniature", label: "Miniature / proxy" },
+  { value: "insert", label: "Insert / Organizer" },
+  { value: "tuckbox", label: "Card Box / Tuckbox" },
+  { value: "dice-tower", label: "Dice Tower / Dice Tray" },
+  { value: "miniature", label: "Miniature / Proxy" },
   { value: "terrain", label: "Terrain" },
-  { value: "tokens", label: "Tokens / resources" },
-  { value: "card-holder", label: "Card holder / stand" },
-  { value: "tracker", label: "Tracker / dashboard" },
+  { value: "tokens", label: "Tokens / Resources" },
+  { value: "card-holder", label: "Card Holder / Stand" },
+  { value: "tracker", label: "Tracker / Dashboard" },
   { value: "other", label: "Other" },
 ] as const;
 
 export const PRODUCT_STATUSES = [
   { value: "wishlist", label: "Saved", swatch: "bg-status-wishlist" },
-  { value: "queued", label: "Queued to print", swatch: "bg-status-queued" },
+  { value: "queued", label: "Queued to Print", swatch: "bg-status-queued" },
   { value: "printed", label: "Printed", swatch: "bg-status-printed" },
-  { value: "installed", label: "In the box", swatch: "bg-status-installed" },
+  { value: "installed", label: "In the Box", swatch: "bg-status-installed" },
 ] as const;
 
 export function typeLabel(value: string): string {

@@ -58,7 +58,7 @@ export default function GamesPage() {
             onClick={() => setSort("gaps")}
             className={cn("px-3 h-7 rounded-md text-sm", sort === "gaps" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
           >
-            Needs prints
+            Needs Prints
           </button>
           <button
             onClick={() => setSort("name")}

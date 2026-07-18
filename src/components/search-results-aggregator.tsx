@@ -59,13 +59,9 @@ export function SearchResultsAggregator({
     [sitesWithResults]
   );
 
-  const typesPresent = useMemo(() => {
-    const present = new Set(flat.map((r) => r.guessedType));
-    return PRODUCT_TYPES.filter((t) => present.has(t.value));
-  }, [flat]);
   const typeItems = useMemo(
-    () => ({ all: "All types", ...Object.fromEntries(typesPresent.map((t) => [t.value, t.label])) }),
-    [typesPresent]
+    () => ({ all: "All types", ...Object.fromEntries(PRODUCT_TYPES.map((t) => [t.value, t.label])) }),
+    []
   );
 
   const filtered = useMemo(() => {
@@ -117,7 +113,7 @@ export function SearchResultsAggregator({
               <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All types</SelectItem>
-                {typesPresent.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                {PRODUCT_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
               </SelectContent>
             </Select>
 

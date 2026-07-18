@@ -11,7 +11,6 @@ import { ProductCard } from "@/components/product-card";
 import { ProductDialog } from "@/components/product-dialog";
 import { SearchResultsAggregator } from "@/components/search-results-aggregator";
 import { searchLinksForGame } from "@/lib/search-links";
-import { UNSUPPORTED_SITES } from "@/lib/providers/unsupported-sites";
 import type { ProviderOutcome, ProviderResult } from "@/lib/providers/types";
 import type { Game, GameSummary, Product } from "@/lib/types";
 
@@ -138,7 +137,10 @@ export default function GameDetailPage({ params }: { params: Promise<{ id: strin
           <SearchResultsAggregator outcomes={outcomes} gameId={game.id} onSaved={upsertLocal} />
         )}
 
-        <div className="flex flex-wrap gap-2 pt-1">
+        <p className="text-xs text-muted-foreground pt-1">
+          MakerWorld and MyMiniFactory can&apos;t be searched automatically, so browse them directly instead:
+        </p>
+        <div className="flex flex-wrap gap-2">
           {searchLinksForGame(game.name).map((s) => (
             <a
               key={s.key}
@@ -149,11 +151,6 @@ export default function GameDetailPage({ params }: { params: Promise<{ id: strin
             >
               {s.label} ↗
             </a>
-          ))}
-        </div>
-        <div className="text-xs text-muted-foreground space-y-0.5">
-          {UNSUPPORTED_SITES.map((s) => (
-            <p key={s.label}>{s.label} isn&apos;t searched automatically: {s.reason} Use the link above instead.</p>
           ))}
         </div>
       </div>

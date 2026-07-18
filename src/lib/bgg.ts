@@ -124,7 +124,8 @@ async function fetchBggXml(url: string, cookieJar: string, retries = 5): Promise
       // instead of assuming, so a wrong diagnosis doesn't send someone
       // in circles reconnecting an account that isn't the problem.
       const detail = body.trim() ? ` (${body.trim().slice(0, 200)})` : "";
-      throw new Error(`Your BGG session expired. Reconnect your account and try again.${detail}`);
+      const cookieNames = cookieJar.split(";").map((s) => s.trim().split("=")[0]).filter(Boolean).join(", ") || "none";
+      throw new Error(`Your BGG session expired. Reconnect your account and try again.${detail} [sent: ${cookieNames}]`);
     }
 
     if (!res.ok) throw new Error(`BGG API ${res.status}: ${await res.text()}`);

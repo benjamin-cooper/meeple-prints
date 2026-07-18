@@ -15,14 +15,14 @@ export const FREE_BY_DEFAULT_DOMAINS = new Set([
 ]);
 
 export const PRODUCT_TYPES = [
-  { value: "insert", label: "Insert" },
-  { value: "organizer", label: "Organizer" },
+  { value: "insert", label: "Insert / organizer" },
   { value: "tuckbox", label: "Tuckbox / card box" },
-  { value: "dice-tower", label: "Dice tower" },
+  { value: "dice-tower", label: "Dice tower / tray" },
   { value: "miniature", label: "Miniature / proxy" },
   { value: "terrain", label: "Terrain" },
-  { value: "tokens", label: "Tokens / meeples" },
+  { value: "tokens", label: "Tokens / resources" },
   { value: "card-holder", label: "Card holder / stand" },
+  { value: "tracker", label: "Tracker / dashboard" },
   { value: "other", label: "Other" },
 ] as const;
 

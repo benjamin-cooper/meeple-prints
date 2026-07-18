@@ -101,7 +101,14 @@ async function fetchBggXml(url: string, cookieJar: string, retries = 5): Promise
     }
 
     if (res.status === 401) {
-      throw new Error("Your BGG session expired. Reconnect your account and try again.");
+      const body = await res.text().catch(() => "");
+      // A 401 here almost always means the session expired, but BGG has
+      // also been seen to return it for other rejections (e.g. an
+      // endpoint-specific restriction). Surface what it actually said
+      // instead of assuming, so a wrong diagnosis doesn't send someone
+      // in circles reconnecting an account that isn't the problem.
+      const detail = body.trim() ? ` (${body.trim().slice(0, 200)})` : "";
+      throw new Error(`Your BGG session expired. Reconnect your account and try again.${detail}`);
     }
 
     if (!res.ok) throw new Error(`BGG API ${res.status}: ${await res.text()}`);

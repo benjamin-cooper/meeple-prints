@@ -111,14 +111,15 @@
   }
 }
 
-/* A faint print-bed grid: the one decorative flourish on the page shell. */
+/* A faint print-bed grid: the one decorative flourish on the page shell.
+   The faintness is mixed into the line color itself, not element opacity —
+   opacity would also fade any real content placed inside the element. */
 .bed-grid {
   background-image:
-    linear-gradient(to right, var(--border) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+    linear-gradient(to right, color-mix(in srgb, var(--border) 40%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--border) 40%, transparent) 1px, transparent 1px);
   background-size: 28px 28px;
   background-position: -1px -1px;
-  opacity: 0.4;
 }
 
 @media (prefers-reduced-motion: reduce) {

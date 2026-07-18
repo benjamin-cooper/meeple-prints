@@ -13,7 +13,6 @@ interface Settings {
   connected: boolean;
   bggUsername: string | null;
   lastCollectionSync: string | null;
-  lastGeeklistSync: string | null;
   hasThingiverseToken: boolean;
   hasCultsCredentials: boolean;
   hasEtsyApiKey: boolean;
@@ -37,7 +36,6 @@ export default function ConnectPage() {
   const [password, setPassword] = useState("");
   const [loggingIn, setLoggingIn] = useState(false);
   const [syncingCollection, setSyncingCollection] = useState(false);
-  const [syncingGeeklist, setSyncingGeeklist] = useState(false);
   const [showReconnect, setShowReconnect] = useState(false);
 
   const refresh = () => fetch("/api/settings").then((r) => r.json()).then(setSettings);
@@ -78,21 +76,6 @@ export default function ConnectPage() {
       toast.error(err instanceof Error ? err.message : "Sync failed.");
     } finally {
       setSyncingCollection(false);
-    }
-  };
-
-  const handleSyncGeeklist = async () => {
-    setSyncingGeeklist(true);
-    try {
-      const res = await fetch("/api/bgg/geeklist/import", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Import failed.");
-      toast.success(`Found ${data.created} new print${data.created === 1 ? "" : "s"} across ${data.itemsScanned} list entries.`);
-      refresh();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Import failed.");
-    } finally {
-      setSyncingGeeklist(false);
     }
   };
 
@@ -180,42 +163,15 @@ export default function ConnectPage() {
       )}
 
       {settings.connected && (
-        <div className="space-y-4">
-          <div className="rounded-lg border border-border bg-card p-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold">Your collection</p>
-                <p className="text-xs text-muted-foreground">Last synced: {formatDate(settings.lastCollectionSync)}</p>
-              </div>
-              <Button variant="secondary" onClick={handleSyncCollection} disabled={syncingCollection}>
-                {syncingCollection ? "Syncing…" : "Sync now"}
-              </Button>
+        <div className="rounded-lg border border-border bg-card p-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold">Your collection</p>
+              <p className="text-xs text-muted-foreground">Last synced: {formatDate(settings.lastCollectionSync)}</p>
             </div>
-          </div>
-
-          <div className="rounded-lg border border-border bg-card p-4 space-y-2">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold">Community 3D-print index</p>
-                <p className="text-xs text-muted-foreground">
-                  Pulls known prints for your games from BGG&apos;s{" "}
-                  <a
-                    href="https://boardgamegeek.com/geeklist/186909/3d-prints-for-board-games"
-                    target="_blank" rel="noopener noreferrer"
-                    className="underline underline-offset-4"
-                  >
-                    3D Prints for Board Games
-                  </a>{" "}
-                  GeekList. Last synced: {formatDate(settings.lastGeeklistSync)}
-                </p>
-              </div>
-              <Button variant="secondary" onClick={handleSyncGeeklist} disabled={syncingGeeklist} className="shrink-0">
-                {syncingGeeklist ? "Importing…" : "Import"}
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              This can take a minute since the list is large and years old. Imported prints get a guessed title until you open one and click &quot;Fetch details.&quot;
-            </p>
+            <Button variant="secondary" onClick={handleSyncCollection} disabled={syncingCollection}>
+              {syncingCollection ? "Syncing…" : "Sync now"}
+            </Button>
           </div>
         </div>
       )}

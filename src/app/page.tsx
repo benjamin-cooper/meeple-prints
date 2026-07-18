@@ -214,7 +214,7 @@ export default function CatalogPage() {
         <div className="text-center py-20 border border-dashed border-border rounded-lg bed-grid">
           <p className="font-display font-bold text-xl uppercase mb-1">Nothing saved yet</p>
           <p className="text-sm text-muted-foreground mb-4 max-w-sm mx-auto">
-            Connect your BGG collection to pull in the community 3D-print index, or add your first find by pasting a link.
+            Connect your BGG collection, then search Discover for prints, or add your first find by pasting a link.
           </p>
           <div className="flex gap-2 justify-center">
             <Button onClick={openAdd} className="gap-1.5"><Plus className="size-4" /> Add a print</Button>

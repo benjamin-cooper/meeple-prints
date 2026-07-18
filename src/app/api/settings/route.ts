@@ -9,7 +9,6 @@ export async function GET() {
     connected: !!settings?.bggSessionId,
     bggUsername: settings?.bggUsername ?? null,
     lastCollectionSync: settings?.lastCollectionSync ?? null,
-    lastGeeklistSync: settings?.lastGeeklistSync ?? null,
     hasThingiverseToken: !!creds.thingiverseToken,
     hasCultsCredentials: !!creds.cultsUsername && !!creds.cultsApiKey,
     hasEtsyApiKey: !!creds.etsyKeystring && !!creds.etsySharedSecret,

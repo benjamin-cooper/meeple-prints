@@ -9,6 +9,12 @@
  * (and handed back to the caller) instead of resending the original
  * login cookie forever.
  *
+ * The GeekList endpoint (`/xmlapi2/geeklist/...`) is deliberately not
+ * used here: BGG rejects it with "Unauthorized" for every client,
+ * including a real logged-in browser session, so it isn't a client-side
+ * bug to work around. The community 3D-print GeekList is still linked
+ * to directly for manual browsing (see lib/search-links.ts).
+ *
  * Docs: https://boardgamegeek.com/wiki/page/BGG_XML_API2
  */
 
@@ -16,10 +22,6 @@ import { parseStringPromise } from "xml2js";
 
 const BGG_API = "https://boardgamegeek.com/xmlapi2";
 const BGG_LOGIN_API = "https://boardgamegeek.com/login/api/v1";
-
-// The community-maintained "3D Prints for Board Games" GeekList.
-// https://boardgamegeek.com/geeklist/186909/3d-prints-for-board-games
-export const PRINTS_GEEKLIST_ID = 186909;
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -29,20 +31,6 @@ export interface BggCollectionGame {
   yearPublished?: number;
   thumbnail?: string;
   image?: string;
-}
-
-export interface GeeklistLink {
-  url: string;
-  domain: string;
-}
-
-export interface GeeklistItem {
-  itemId: string;
-  bggId: number | null; // BGG game id this entry is attached to, if any
-  gameName: string | null;
-  username: string;
-  postdate: string;
-  links: GeeklistLink[];
 }
 
 // ── Authentication ─────────────────────────────────────────────────────────
@@ -117,15 +105,7 @@ async function fetchBggXml(url: string, cookieJar: string, retries = 5): Promise
     }
 
     if (res.status === 401) {
-      const body = await res.text().catch(() => "");
-      // A 401 here almost always means the session expired, but BGG has
-      // also been seen to return it for other rejections (e.g. an
-      // endpoint-specific restriction). Surface what it actually said
-      // instead of assuming, so a wrong diagnosis doesn't send someone
-      // in circles reconnecting an account that isn't the problem.
-      const detail = body.trim() ? ` (${body.trim().slice(0, 200)})` : "";
-      const cookieNames = cookieJar.split(";").map((s) => s.trim().split("=")[0]).filter(Boolean).join(", ") || "none";
-      throw new Error(`Your BGG session expired. Reconnect your account and try again.${detail} [sent: ${cookieNames}]`);
+      throw new Error("Your BGG session expired. Reconnect your account and try again.");
     }
 
     if (!res.ok) throw new Error(`BGG API ${res.status}: ${await res.text()}`);
@@ -178,113 +158,6 @@ export async function getBggCollection(
     .filter((g) => g.bggId > 0);
 
   return { games, cookieJar: nextJar };
-}
-
-// ── GeekList (community 3D-print index) ─────────────────────────────────────
-
-const KNOWN_PRINT_DOMAINS = [
-  "thingiverse.com",
-  "printables.com",
-  "makerworld.com",
-  "cults3d.com",
-  "myminifactory.com",
-  "etsy.com",
-];
-
-const IMAGE_EXT_RE = /\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i;
-
-function extractLinks(body: string): GeeklistLink[] {
-  const urlRe = /https?:\/\/[^\s\]"'<>)]+/g;
-  const matches = body.match(urlRe) ?? [];
-  const seen = new Set<string>();
-  const links: GeeklistLink[] = [];
-
-  for (const raw of matches) {
-    const url = raw.replace(/[.,;:]+$/, "");
-    if (IMAGE_EXT_RE.test(url)) continue;
-    if (url.includes("boardgamegeek.com")) continue;
-    if (seen.has(url)) continue;
-
-    let domain: string;
-    try {
-      domain = new URL(url).hostname.replace(/^www\./, "");
-    } catch {
-      continue;
-    }
-
-    const known = KNOWN_PRINT_DOMAINS.find((d) => domain === d || domain.endsWith(`.${d}`));
-    if (!known) continue;
-
-    seen.add(url);
-    links.push({ url, domain: known });
-  }
-  return links;
-}
-
-async function fetchGeeklistPage(
-  geeklistId: number,
-  page: number,
-  cookieJar: string
-): Promise<{ items: GeeklistItem[]; cookieJar: string }> {
-  const url = `${BGG_API}/geeklist/${geeklistId}?comments=1&page=${page}`;
-  const { xml, cookieJar: nextJar } = await fetchBggXml(url, cookieJar);
-  const parsed = await parseStringPromise(xml, { explicitArray: true });
-
-  const rawItems: unknown[] = parsed?.geeklist?.item ?? [];
-  const items = rawItems.map((item: unknown) => {
-    const i = item as {
-      $?: { id?: string; objectid?: string; objectname?: string; username?: string; postdate?: string };
-      body?: Array<{ _?: string } | string>;
-    };
-    const objectId = i.$?.objectid ? parseInt(i.$.objectid) : NaN;
-    return {
-      itemId: i.$?.id ?? "",
-      bggId: !isNaN(objectId) && objectId > 0 ? objectId : null,
-      gameName: i.$?.objectname ?? null,
-      username: i.$?.username ?? "",
-      postdate: i.$?.postdate ?? "",
-      links: extractLinks(getText(i.body)),
-    };
-  });
-
-  return { items, cookieJar: nextJar };
-}
-
-/**
- * Fetch every item of a GeekList. The API doesn't document a stable page
- * size, so this pages until a request contributes no new item ids.
- * That's safe whether or not `page` is actually honored server-side.
- * Each page's request uses whatever cookie jar the previous page's
- * response returned, in case BGG rotates the session on use.
- */
-export async function getGeeklistItems(
-  geeklistId: number,
-  cookieJar: string,
-  onProgress?: (itemsSoFar: number, page: number) => void
-): Promise<{ items: GeeklistItem[]; cookieJar: string }> {
-  const byId = new Map<string, GeeklistItem>();
-  const MAX_PAGES = 60;
-  let currentJar = cookieJar;
-
-  for (let page = 1; page <= MAX_PAGES; page++) {
-    const result = await fetchGeeklistPage(geeklistId, page, currentJar);
-    currentJar = result.cookieJar;
-    if (result.items.length === 0) break;
-
-    let newCount = 0;
-    for (const item of result.items) {
-      if (!item.itemId || byId.has(item.itemId)) continue;
-      byId.set(item.itemId, item);
-      newCount++;
-    }
-
-    onProgress?.(byId.size, page);
-    if (newCount === 0) break;
-
-    await new Promise((r) => setTimeout(r, 250));
-  }
-
-  return { items: Array.from(byId.values()), cookieJar: currentJar };
 }
 
 // ── Utilities ──────────────────────────────────────────────────────────────

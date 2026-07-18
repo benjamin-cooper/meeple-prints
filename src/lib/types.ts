@@ -29,7 +29,6 @@ export interface Product {
   rating: number | null;
   notes: string | null;
   tags: string | null;
-  source: string;
   createdAt: string;
   updatedAt: string;
   games: GameSummary[];

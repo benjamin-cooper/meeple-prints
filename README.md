@@ -17,7 +17,9 @@ Or through the workspace launch config: the `meeple-prints` entry in `../.claude
 
 ## How it works
 
-**Connect** (`/connect`) logs into your BGG account (session token only, never the password, is stored) and pulls your owned collection. From there it can also walk BGG's community-maintained [3D Prints for Board Games GeekList](https://boardgamegeek.com/geeklist/186909/3d-prints-for-board-games) and match its links to games already in your collection, seeding a starting catalog. Imported entries get a best-guess title from the URL itself; opening an entry and hitting "Fetch details" pulls the real title, image, and description on demand.
+**Connect** (`/connect`) logs into your BGG account (session token only, never the password, is stored) and pulls your owned collection.
+
+BGG's community-maintained [3D Prints for Board Games GeekList](https://boardgamegeek.com/geeklist/186909/3d-prints-for-board-games) looked like a great way to seed a starting catalog, but BGG blocks API access to its GeekList endpoint entirely, even for a real logged-in browser session, so that idea didn't survive contact with the actual API. It's still linked from each game's page as a manual-browse option.
 
 **Discover** (`/discover`) searches Printables (no key needed), Thingiverse, Cults3D, and Etsy (each need a free API key set as an environment variable, see below) for a single game or a batch of unscanned games at once, merging every site's hits into one filterable grid: source, guessed accessory type, free-only, price sort, with a one-click Save per result. MakerWorld and MyMiniFactory don't expose a search API that works from a server, so those stay as deep-link buttons on each game's page instead.
 

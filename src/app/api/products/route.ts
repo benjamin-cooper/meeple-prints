@@ -45,7 +45,6 @@ export async function POST(request: NextRequest) {
         rating: rating || null,
         notes: notes || null,
         tags: tags ? JSON.stringify(tags) : null,
-        source: "manual",
         games: { connect: gameIds.map((id: number) => ({ id })) },
       },
       include: { games: { select: { id: true, name: true, thumbnail: true, bggId: true } } },

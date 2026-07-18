@@ -47,7 +47,6 @@ model Product {
   rating       Int?     // 1-5 personal usefulness rating
   notes        String?
   tags         String?  // JSON-encoded string[]
-  source       String   @default("manual") // manual | geeklist_import
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -65,5 +64,4 @@ model Settings {
   bggUsername        String?
   bggSessionId       String?
   lastCollectionSync DateTime?
-  lastGeeklistSync   DateTime?
 }

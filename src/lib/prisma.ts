@@ -3,8 +3,10 @@ import { PrismaLibSql } from "@prisma/adapter-libsql";
 
 function createPrisma() {
   const url = process.env.DATABASE_URL ?? "file:./prisma/dev.db";
-  // libsql adapter accepts file: URLs directly
-  const adapter = new PrismaLibSql({ url });
+  // A local file: URL needs nothing else. A hosted libsql/Turso URL
+  // (libsql://...) needs its auth token passed separately.
+  const authToken = process.env.DATABASE_AUTH_TOKEN;
+  const adapter = new PrismaLibSql(authToken ? { url, authToken } : { url });
   return new PrismaClient({ adapter });
 }
 

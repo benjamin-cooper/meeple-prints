@@ -5,6 +5,7 @@
  * results are already saved in the catalog.
  */
 import { searchAllProviders } from "@/lib/providers";
+import { getProviderCredentials } from "@/lib/providers/env-credentials";
 import { prisma } from "@/lib/prisma";
 import type { NextRequest } from "next/server";
 
@@ -16,15 +17,7 @@ export async function POST(request: NextRequest) {
   const game = await prisma.game.findUnique({ where: { id } });
   if (!game) return Response.json({ error: "Game not found." }, { status: 404 });
 
-  const settings = await prisma.settings.findUnique({ where: { id: "singleton" } });
-  const creds = {
-    thingiverseToken: settings?.thingiverseToken ?? null,
-    cultsUsername: settings?.cultsUsername ?? null,
-    cultsApiKey: settings?.cultsApiKey ?? null,
-    etsyApiKey: settings?.etsyApiKey ?? null,
-  };
-
-  const outcomes = await searchAllProviders(game.name, creds);
+  const outcomes = await searchAllProviders(game.name, getProviderCredentials());
 
   const urls = outcomes.flatMap((o) => o.results.map((r) => r.url));
   const existing = urls.length

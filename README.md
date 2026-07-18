@@ -19,7 +19,7 @@ Or through the workspace launch config: the `meeple-prints` entry in `../.claude
 
 **Connect** (`/connect`) logs into your BGG account (session token only, never the password, is stored) and pulls your owned collection. From there it can also walk BGG's community-maintained [3D Prints for Board Games GeekList](https://boardgamegeek.com/geeklist/186909/3d-prints-for-board-games) and match its links to games already in your collection, seeding a starting catalog. Imported entries get a best-guess title from the URL itself; opening an entry and hitting "Fetch details" pulls the real title, image, and description on demand.
 
-**Discover** (`/discover`) searches Printables (no key needed), Thingiverse, Cults3D, and Etsy (each need a free API key, added on Connect) for a single game or a batch of unscanned games at once, merging every site's hits into one filterable grid: source, guessed accessory type, free-only, price sort, with a one-click Save per result. MakerWorld and MyMiniFactory don't expose a search API that works from a server, so those stay as deep-link buttons on each game's page instead.
+**Discover** (`/discover`) searches Printables (no key needed), Thingiverse, Cults3D, and Etsy (each need a free API key set as an environment variable, see below) for a single game or a batch of unscanned games at once, merging every site's hits into one filterable grid: source, guessed accessory type, free-only, price sort, with a one-click Save per result. MakerWorld and MyMiniFactory don't expose a search API that works from a server, so those stay as deep-link buttons on each game's page instead.
 
 **Games** (`/games`) sorts your collection by print coverage first, so the games with zero saved prints surface at the top instead of getting lost in an alphabetical list.
 
@@ -27,7 +27,9 @@ Or through the workspace launch config: the `meeple-prints` entry in `../.claude
 
 - `Game`: cached from your BGG collection.
 - `Product`: a saved print, many-to-many with `Game` (a generic dice tower or a card holder that fits several games doesn't need to be saved twice).
-- `Settings`: a single row holding the connected BGG session and each site's search API credentials.
+- `Settings`: a single row holding the connected BGG session.
+
+Search provider credentials (Thingiverse, Cults3D, Etsy) are environment variables, not database rows. See `.env.example` and the Connect page, which shows each one's configured/not-configured status read live from the environment.
 
 ## Access
 

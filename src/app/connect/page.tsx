@@ -2,20 +2,28 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 interface Settings {
   connected: boolean;
   bggUsername: string | null;
   lastCollectionSync: string | null;
   lastGeeklistSync: string | null;
-  thingiverseToken: string | null;
-  cultsUsername: string | null;
-  cultsApiKey: string | null;
-  etsyApiKey: string | null;
+  hasThingiverseToken: boolean;
+  hasCultsCredentials: boolean;
+  hasEtsyApiKey: boolean;
+}
+
+interface ProviderEnvStatus {
+  label: string;
+  configured: boolean;
+  envVars: string;
+  instructions: React.ReactNode;
 }
 
 function formatDate(iso: string | null) {
@@ -31,7 +39,6 @@ export default function ConnectPage() {
   const [syncingCollection, setSyncingCollection] = useState(false);
   const [syncingGeeklist, setSyncingGeeklist] = useState(false);
   const [showReconnect, setShowReconnect] = useState(false);
-  const [savingKeys, setSavingKeys] = useState(false);
 
   const refresh = () => fetch("/api/settings").then((r) => r.json()).then(setSettings);
 
@@ -89,35 +96,54 @@ export default function ConnectPage() {
     }
   };
 
-  const setKey = <K extends keyof Settings>(key: K, value: Settings[K]) =>
-    setSettings((s) => (s ? { ...s, [key]: value } : s));
-
-  const handleSaveKeys = async () => {
-    if (!settings) return;
-    setSavingKeys(true);
-    try {
-      const res = await fetch("/api/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          thingiverseToken: settings.thingiverseToken,
-          cultsUsername: settings.cultsUsername,
-          cultsApiKey: settings.cultsApiKey,
-          etsyApiKey: settings.etsyApiKey,
-        }),
-      });
-      if (!res.ok) throw new Error("Couldn't save those keys.");
-      toast.success("Search keys saved.");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't save those keys.");
-    } finally {
-      setSavingKeys(false);
-    }
-  };
-
   if (!settings) {
     return <div className="max-w-lg space-y-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-32" /></div>;
   }
+
+  const providerStatuses: ProviderEnvStatus[] = [
+    {
+      label: "Thingiverse",
+      configured: settings.hasThingiverseToken,
+      envVars: "THINGIVERSE_TOKEN",
+      instructions: (
+        <>
+          Create a free app at{" "}
+          <a href="https://www.thingiverse.com/apps/create" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
+            thingiverse.com/apps/create
+          </a>{" "}
+          and set its App Token as <code className="font-mono">THINGIVERSE_TOKEN</code>.
+        </>
+      ),
+    },
+    {
+      label: "Cults3D",
+      configured: settings.hasCultsCredentials,
+      envVars: "CULTS_USERNAME, CULTS_API_KEY",
+      instructions: (
+        <>
+          Generate a read-only key at{" "}
+          <a href="https://cults3d.com/en/api/keys" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
+            cults3d.com/en/api/keys
+          </a>{" "}
+          and set your handle as <code className="font-mono">CULTS_USERNAME</code> and the key as <code className="font-mono">CULTS_API_KEY</code>.
+        </>
+      ),
+    },
+    {
+      label: "Etsy",
+      configured: settings.hasEtsyApiKey,
+      envVars: "ETSY_API_KEY",
+      instructions: (
+        <>
+          Create a Personal App at{" "}
+          <a href="https://www.etsy.com/developers" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
+            etsy.com/developers
+          </a>{" "}
+          (approval usually takes a day or two) and set its keystring as <code className="font-mono">ETSY_API_KEY</code>.
+        </>
+      ),
+    },
+  ];
 
   return (
     <div className="max-w-lg space-y-8">
@@ -195,73 +221,30 @@ export default function ConnectPage() {
 
       <div className="space-y-3">
         <div>
-          <h2 className="font-display font-extrabold uppercase text-xl tracking-tight leading-none">Search API keys</h2>
+          <h2 className="font-display font-extrabold uppercase text-xl tracking-tight leading-none">Search sites</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Add these to let Discover search a site automatically. Each is free and self-serve; Printables needs nothing and always works.
+            These are set as environment variables on wherever this is hosted, not from this page.
+            That way there&apos;s one source of truth instead of a database row that can drift from
+            what&apos;s actually deployed. Printables needs nothing and always works.
           </p>
         </div>
 
-        <div className="rounded-lg border border-border bg-card p-4 space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="thingiverse-token">Thingiverse app token</Label>
-            <Input
-              id="thingiverse-token"
-              value={settings.thingiverseToken ?? ""}
-              onChange={(e) => setKey("thingiverseToken", e.target.value)}
-              placeholder="Paste your app token"
-            />
-            <p className="text-xs text-muted-foreground">
-              Create a free app at{" "}
-              <a href="https://www.thingiverse.com/apps/create" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
-                thingiverse.com/apps/create
-              </a>{" "}
-              and paste its App Token here.
-            </p>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="cults-username">Cults3D username + API key</Label>
-            <div className="flex gap-2">
-              <Input
-                id="cults-username"
-                value={settings.cultsUsername ?? ""}
-                onChange={(e) => setKey("cultsUsername", e.target.value)}
-                placeholder="Your Cults handle"
-                className="w-1/3"
-              />
-              <Input
-                value={settings.cultsApiKey ?? ""}
-                onChange={(e) => setKey("cultsApiKey", e.target.value)}
-                placeholder="API key"
-              />
+        <div className="rounded-lg border border-border bg-card divide-y divide-border">
+          {providerStatuses.map((p) => (
+            <div key={p.label} className="p-4 space-y-1.5">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-semibold">{p.label}</span>
+                <span className={cn(
+                  "inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full",
+                  p.configured ? "bg-status-printed/15 text-status-printed" : "bg-muted text-muted-foreground"
+                )}>
+                  {p.configured ? <Check className="size-3" /> : <X className="size-3" />}
+                  {p.configured ? "Configured" : "Not configured"}
+                </span>
+              </div>
+              {!p.configured && <p className="text-xs text-muted-foreground">{p.instructions}</p>}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Generate a read-only key at{" "}
-              <a href="https://cults3d.com/en/api/keys" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
-                cults3d.com/en/api/keys
-              </a>.
-            </p>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="etsy-key">Etsy API key</Label>
-            <Input
-              id="etsy-key"
-              value={settings.etsyApiKey ?? ""}
-              onChange={(e) => setKey("etsyApiKey", e.target.value)}
-              placeholder="Paste your keystring"
-            />
-            <p className="text-xs text-muted-foreground">
-              Create a Personal App at{" "}
-              <a href="https://www.etsy.com/developers" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
-                etsy.com/developers
-              </a>. Approval usually takes a day or two.
-            </p>
-          </div>
-
-          <Button onClick={handleSaveKeys} disabled={savingKeys} className="w-full">
-            {savingKeys ? "Saving…" : "Save keys"}
-          </Button>
+          ))}
         </div>
       </div>
     </div>

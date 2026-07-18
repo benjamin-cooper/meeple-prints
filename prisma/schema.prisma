@@ -56,18 +56,14 @@ model Product {
 
 // Single-row settings for the connected BGG collection. This is a personal,
 // single-household tool, so the BGG session lives here rather than behind
-// a full multi-user auth system.
+// a full multi-user auth system. Search provider credentials (Thingiverse,
+// Cults3D, Etsy) live in environment variables instead of here, since
+// they're static secrets rather than something that needs a "reconnect"
+// flow, and env vars don't need manually syncing between environments.
 model Settings {
   id                 String    @id @default("singleton")
   bggUsername        String?
   bggSessionId       String?
   lastCollectionSync DateTime?
   lastGeeklistSync   DateTime?
-
-  // Optional per-site credentials for automatic search. Each is free/quick
-  // to obtain but requires the user to sign up on that site's dev portal.
-  thingiverseToken String? // Thingiverse app token (Bearer)
-  cultsUsername    String? // Cults3D handle, paired with cultsApiKey for Basic auth
-  cultsApiKey      String?
-  etsyApiKey       String? // Etsy Open API v3 keystring, sent as x-api-key
 }

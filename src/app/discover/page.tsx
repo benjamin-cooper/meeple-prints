@@ -25,14 +25,14 @@ interface GameResult {
 }
 
 interface ProviderStatus {
-  key: "thingiverseToken" | "cultsUsername" | "etsyApiKey";
+  key: "hasThingiverseToken" | "hasCultsCredentials" | "hasEtsyApiKey";
   label: string;
 }
 
 const NEEDS_KEY: ProviderStatus[] = [
-  { key: "thingiverseToken", label: "Thingiverse" },
-  { key: "cultsUsername", label: "Cults3D" },
-  { key: "etsyApiKey", label: "Etsy" },
+  { key: "hasThingiverseToken", label: "Thingiverse" },
+  { key: "hasCultsCredentials", label: "Cults3D" },
+  { key: "hasEtsyApiKey", label: "Etsy" },
 ];
 
 const BATCH_SIZES = ["5", "10", "20"];
@@ -49,7 +49,7 @@ function GameResultSection({ result, onSaved }: { result: GameResult; onSaved: (
 }
 
 export default function DiscoverPage() {
-  const [settings, setSettings] = useState<Record<string, string | null> | null>(null);
+  const [settings, setSettings] = useState<Record<string, boolean> | null>(null);
   const [allGames, setAllGames] = useState<GameSummary[]>([]);
   const [totalGames, setTotalGames] = useState<number | null>(null);
   const [scannedGames, setScannedGames] = useState<number | null>(null);

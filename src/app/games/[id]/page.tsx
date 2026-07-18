@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -30,6 +30,7 @@ export default function GameDetailPage({ params }: { params: Promise<{ id: strin
   const [editing, setEditing] = useState<Product | null>(null);
   const [outcomes, setOutcomes] = useState<AnnotatedOutcome[] | null>(null);
   const [searching, setSearching] = useState(false);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch(`/api/games/${id}`).then((r) => r.json()).then((g) => { setGame(g); setOutcomes(null); });
@@ -52,6 +53,7 @@ export default function GameDetailPage({ params }: { params: Promise<{ id: strin
       if (!res.ok) throw new Error(data.error ?? "Search failed.");
       setOutcomes(data.providers);
       fetch(`/api/games/${game.id}/mark-scanned`, { method: "POST" }).catch(() => {});
+      resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Search failed.");
     } finally {
@@ -98,8 +100,11 @@ export default function GameDetailPage({ params }: { params: Promise<{ id: strin
           <p className="text-sm text-muted-foreground">
             {game.products.length} print{game.products.length === 1 ? "" : "s"} saved
           </p>
-          <div className="flex gap-2 pt-1">
+          <div className="flex gap-2 pt-1 flex-wrap">
             <Button onClick={openAdd} className="gap-1.5"><Plus className="size-4" /> Add a print for this game</Button>
+            <Button variant="secondary" className="gap-1.5" onClick={handleSearchAllSites} disabled={searching}>
+              <Search className="size-4" /> {searching ? "Searching…" : "Search all sites"}
+            </Button>
             <Button
               variant="outline"
               className="gap-1.5"
@@ -125,13 +130,8 @@ export default function GameDetailPage({ params }: { params: Promise<{ id: strin
         </div>
       )}
 
-      <div className="space-y-3 pt-2 border-t border-border">
-        <div className="flex items-center justify-between gap-3 pt-4">
-          <h2 className="text-sm font-semibold">Look for more</h2>
-          <Button variant="secondary" className="gap-1.5" onClick={handleSearchAllSites} disabled={searching}>
-            <Search className="size-4" /> {searching ? "Searching…" : "Search all sites"}
-          </Button>
-        </div>
+      <div ref={resultsRef} className="space-y-3 pt-2 border-t border-border">
+        <h2 className="text-sm font-semibold pt-4">Look for more</h2>
 
         {outcomes && (
           <SearchResultsAggregator outcomes={outcomes} gameId={game.id} onSaved={upsertLocal} />

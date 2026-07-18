@@ -15,7 +15,7 @@ export async function POST() {
   }
 
   try {
-    const games = await getBggCollection(settings.bggUsername, settings.bggSessionId);
+    const { games, cookieJar } = await getBggCollection(settings.bggUsername, settings.bggSessionId);
 
     // Each upsert targets a distinct bggId, so these are safe to run
     // concurrently instead of one round trip at a time.
@@ -48,7 +48,12 @@ export async function POST() {
       await prisma.game.updateMany({ where: { id: { in: droppedIds } }, data: { inCollection: false } });
     }
 
-    await prisma.settings.update({ where: { id: "singleton" }, data: { lastCollectionSync: new Date() } });
+    // BGG appears to rotate the session cookie on use, so persist whatever
+    // came back rather than letting the next request resend a stale one.
+    await prisma.settings.update({
+      where: { id: "singleton" },
+      data: { lastCollectionSync: new Date(), bggSessionId: cookieJar },
+    });
 
     return Response.json({ imported: games.length, removedFromCollection: droppedIds.length });
   } catch (err) {

@@ -3,7 +3,11 @@
  *
  * BGG's XML API v2 requires session authentication (since early 2026).
  * The caller logs in with a BGG username+password, which returns the
- * cookie jar that must be sent with every subsequent request.
+ * cookie jar that must be sent with every subsequent request. BGG also
+ * appears to rotate the session cookie on use, so every response is
+ * re-scanned for a fresh Set-Cookie and the merged jar is threaded through
+ * (and handed back to the caller) instead of resending the original
+ * login cookie forever.
  *
  * Docs: https://boardgamegeek.com/wiki/page/BGG_XML_API2
  */
@@ -44,19 +48,26 @@ export interface GeeklistItem {
 // ── Authentication ─────────────────────────────────────────────────────────
 
 /**
- * BGG's login response can set more than one cookie (SessionID plus others
- * the XML API also checks). `Headers.get("set-cookie")` only reliably
- * surfaces a single header, so this reads every Set-Cookie line via
- * `getSetCookie()` and rebuilds a full `name=value; name2=value2` jar to
- * forward on later requests, rather than keeping just the SessionID value.
+ * Merges any Set-Cookie headers on a response into an existing cookie jar
+ * string, overwriting cookies by name and leaving the rest untouched.
+ * `Headers.get("set-cookie")` only reliably surfaces a single header, so
+ * this reads every line via `getSetCookie()`.
  */
-function cookieJarFromResponse(res: Response): string {
+function mergeCookieJar(existingJar: string, res: Response): string {
   const setCookies = res.headers.getSetCookie?.() ?? [];
-  if (setCookies.length > 0) {
-    return setCookies.map((sc) => sc.split(";")[0].trim()).filter(Boolean).join("; ");
+  if (setCookies.length === 0) return existingJar;
+
+  const jar = new Map<string, string>();
+  for (const pair of existingJar.split(";").map((s) => s.trim()).filter(Boolean)) {
+    const eq = pair.indexOf("=");
+    if (eq > 0) jar.set(pair.slice(0, eq), pair.slice(eq + 1));
   }
-  // Fallback for runtimes without getSetCookie(): best effort on the combined header.
-  return res.headers.get("set-cookie") ?? "";
+  for (const setCookie of setCookies) {
+    const pair = setCookie.split(";")[0].trim();
+    const eq = pair.indexOf("=");
+    if (eq > 0) jar.set(pair.slice(0, eq), pair.slice(eq + 1));
+  }
+  return Array.from(jar.entries()).map(([k, v]) => `${k}=${v}`).join("; ");
 }
 
 /** Log in to BGG and return the full session cookie jar. Throws if credentials are invalid. */
@@ -77,14 +88,19 @@ export async function bggLogin(username: string, password: string): Promise<stri
     throw new Error(msg);
   }
 
-  const cookieJar = cookieJarFromResponse(res);
+  const cookieJar = mergeCookieJar("", res);
   if (!cookieJar.includes("SessionID=")) throw new Error("No session cookie returned from BGG login");
   return cookieJar;
 }
 
 // ── Fetch helpers ──────────────────────────────────────────────────────────
 
-async function fetchBggXml(url: string, cookieJar: string, retries = 5): Promise<string> {
+interface BggXmlResult {
+  xml: string;
+  cookieJar: string;
+}
+
+async function fetchBggXml(url: string, cookieJar: string, retries = 5): Promise<BggXmlResult> {
   for (let i = 0; i < retries; i++) {
     const res = await fetch(url, {
       headers: {
@@ -112,7 +128,7 @@ async function fetchBggXml(url: string, cookieJar: string, retries = 5): Promise
     }
 
     if (!res.ok) throw new Error(`BGG API ${res.status}: ${await res.text()}`);
-    return res.text();
+    return { xml: await res.text(), cookieJar: mergeCookieJar(cookieJar, res) };
   }
   throw new Error("BGG API timed out after retries");
 }
@@ -126,17 +142,21 @@ function getText(node: unknown): string {
 
 // ── Collection ─────────────────────────────────────────────────────────────
 
-/** Fetch the full owned collection (base games only) for a BGG username. */
+/**
+ * Fetch the full owned collection (base games only) for a BGG username.
+ * Returns the (possibly rotated) cookie jar alongside the games so the
+ * caller can persist it for the next request.
+ */
 export async function getBggCollection(
   bggUsername: string,
-  sessionId: string
-): Promise<BggCollectionGame[]> {
+  cookieJar: string
+): Promise<{ games: BggCollectionGame[]; cookieJar: string }> {
   const url = `${BGG_API}/collection?username=${encodeURIComponent(bggUsername)}&own=1&excludesubtype=boardgameexpansion`;
-  const xml = await fetchBggXml(url, sessionId);
+  const { xml, cookieJar: nextJar } = await fetchBggXml(url, cookieJar);
   const parsed = await parseStringPromise(xml, { explicitArray: true });
 
   const items: unknown[] = parsed?.items?.item ?? [];
-  return items
+  const games = items
     .map((item: unknown) => {
       const i = item as {
         $?: { objectid?: string };
@@ -155,6 +175,8 @@ export async function getBggCollection(
       };
     })
     .filter((g) => g.bggId > 0);
+
+  return { games, cookieJar: nextJar };
 }
 
 // ── GeekList (community 3D-print index) ─────────────────────────────────────
@@ -201,14 +223,14 @@ function extractLinks(body: string): GeeklistLink[] {
 async function fetchGeeklistPage(
   geeklistId: number,
   page: number,
-  sessionId: string
-): Promise<GeeklistItem[]> {
+  cookieJar: string
+): Promise<{ items: GeeklistItem[]; cookieJar: string }> {
   const url = `${BGG_API}/geeklist/${geeklistId}?comments=1&page=${page}`;
-  const xml = await fetchBggXml(url, sessionId);
+  const { xml, cookieJar: nextJar } = await fetchBggXml(url, cookieJar);
   const parsed = await parseStringPromise(xml, { explicitArray: true });
 
   const rawItems: unknown[] = parsed?.geeklist?.item ?? [];
-  return rawItems.map((item: unknown) => {
+  const items = rawItems.map((item: unknown) => {
     const i = item as {
       $?: { id?: string; objectid?: string; objectname?: string; username?: string; postdate?: string };
       body?: Array<{ _?: string } | string>;
@@ -223,27 +245,33 @@ async function fetchGeeklistPage(
       links: extractLinks(getText(i.body)),
     };
   });
+
+  return { items, cookieJar: nextJar };
 }
 
 /**
  * Fetch every item of a GeekList. The API doesn't document a stable page
  * size, so this pages until a request contributes no new item ids.
  * That's safe whether or not `page` is actually honored server-side.
+ * Each page's request uses whatever cookie jar the previous page's
+ * response returned, in case BGG rotates the session on use.
  */
 export async function getGeeklistItems(
   geeklistId: number,
-  sessionId: string,
+  cookieJar: string,
   onProgress?: (itemsSoFar: number, page: number) => void
-): Promise<GeeklistItem[]> {
+): Promise<{ items: GeeklistItem[]; cookieJar: string }> {
   const byId = new Map<string, GeeklistItem>();
   const MAX_PAGES = 60;
+  let currentJar = cookieJar;
 
   for (let page = 1; page <= MAX_PAGES; page++) {
-    const items = await fetchGeeklistPage(geeklistId, page, sessionId);
-    if (items.length === 0) break;
+    const result = await fetchGeeklistPage(geeklistId, page, currentJar);
+    currentJar = result.cookieJar;
+    if (result.items.length === 0) break;
 
     let newCount = 0;
-    for (const item of items) {
+    for (const item of result.items) {
       if (!item.itemId || byId.has(item.itemId)) continue;
       byId.set(item.itemId, item);
       newCount++;
@@ -255,7 +283,7 @@ export async function getGeeklistItems(
     await new Promise((r) => setTimeout(r, 250));
   }
 
-  return Array.from(byId.values());
+  return { items: Array.from(byId.values()), cookieJar: currentJar };
 }
 
 // ── Utilities ──────────────────────────────────────────────────────────────

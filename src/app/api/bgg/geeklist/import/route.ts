@@ -23,7 +23,7 @@ export async function POST() {
   }
 
   try {
-    const items = await getGeeklistItems(PRINTS_GEEKLIST_ID, settings.bggSessionId);
+    const { items, cookieJar } = await getGeeklistItems(PRINTS_GEEKLIST_ID, settings.bggSessionId);
 
     // Flatten every item's links into url -> the set of games it applies
     // to, deduping repeats up front instead of writing the same row twice.
@@ -96,7 +96,10 @@ export async function POST() {
     }
 
     await Promise.all(writes);
-    await prisma.settings.update({ where: { id: "singleton" }, data: { lastGeeklistSync: new Date() } });
+    await prisma.settings.update({
+      where: { id: "singleton" },
+      data: { lastGeeklistSync: new Date(), bggSessionId: cookieJar },
+    });
 
     return Response.json({ itemsScanned: items.length, created, skippedNoGame, skippedDuplicate });
   } catch (err) {

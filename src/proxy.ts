@@ -6,7 +6,7 @@ export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|login|api/auth/login).*)"],
 };
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   if (await isValidSessionToken(token)) return NextResponse.next();
 

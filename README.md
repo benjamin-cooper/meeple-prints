@@ -33,6 +33,16 @@ Or through the workspace launch config: the `meeple-prints` entry in `../.claude
 
 This is a single-household tool with no per-user accounts. The whole site sits behind `/login`, which only accepts the BGG username configured in `OWNER_BGG_USERNAME` and verifies the password against real BGG login; anyone else's valid BGG credentials are rejected. A successful login also connects BGG collection sync, so there's only one login to do. See `.env.example` for the required environment variables.
 
+## Deploying
+
+Production runs on [Turso](https://turso.tech) (hosted libsql) instead of a local SQLite file, since a serverless host like Vercel can't persist one. `DATABASE_URL` becomes a `libsql://...` URL and `DATABASE_AUTH_TOKEN` its token; `src/lib/prisma.ts` picks both up automatically.
+
+Prisma's own `migrate deploy` doesn't understand the `libsql://` scheme, so schema changes don't apply themselves on deploy. After running `npx prisma migrate dev` locally (which still targets the local SQLite file), apply the new migration's SQL directly:
+
+```
+turso db shell meeple-prints < prisma/migrations/<new-migration-folder>/migration.sql
+```
+
 ## Notes for later
 
 - No manual dark-mode toggle is wired up yet, though the CSS variables already support a `.dark` class the way the sibling projects do.

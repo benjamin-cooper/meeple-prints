@@ -21,7 +21,7 @@ export async function proxy(request: NextRequest) {
   if (await isValidSessionToken(token)) return NextResponse.next();
 
   if (request.nextUrl.pathname.startsWith("/api/")) {
-    return Response.json({ error: "Sign in to do that." }, { status: 401 });
+    return Response.json({ error: "Connect to BoardGameGeek to add or save." }, { status: 401 });
   }
 
   const loginUrl = new URL("/login", request.url);

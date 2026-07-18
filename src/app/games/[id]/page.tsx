@@ -130,14 +130,12 @@ export default function GameDetailPage({ params }: { params: Promise<{ id: strin
         </div>
       )}
 
-      <div ref={resultsRef} className="space-y-3 pt-2 border-t border-border">
-        <h2 className="text-sm font-semibold pt-4">Look for more</h2>
-
+      <div ref={resultsRef} className="space-y-3 pt-4 border-t border-border">
         {outcomes && (
           <SearchResultsAggregator outcomes={outcomes} gameId={game.id} onSaved={upsertLocal} />
         )}
 
-        <p className="text-xs text-muted-foreground pt-1">
+        <p className="text-xs text-muted-foreground">
           MakerWorld and MyMiniFactory can&apos;t be searched automatically, so browse them directly instead:
         </p>
         <div className="flex flex-wrap gap-2">

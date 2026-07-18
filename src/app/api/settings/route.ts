@@ -12,6 +12,6 @@ export async function GET() {
     lastGeeklistSync: settings?.lastGeeklistSync ?? null,
     hasThingiverseToken: !!creds.thingiverseToken,
     hasCultsCredentials: !!creds.cultsUsername && !!creds.cultsApiKey,
-    hasEtsyApiKey: !!creds.etsyApiKey,
+    hasEtsyApiKey: !!creds.etsyKeystring && !!creds.etsySharedSecret,
   });
 }

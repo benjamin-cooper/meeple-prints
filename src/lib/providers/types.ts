@@ -2,7 +2,8 @@ export interface ProviderCredentials {
   thingiverseToken: string | null;
   cultsUsername: string | null;
   cultsApiKey: string | null;
-  etsyApiKey: string | null;
+  etsyKeystring: string | null;
+  etsySharedSecret: string | null;
 }
 
 export interface ProviderResult {

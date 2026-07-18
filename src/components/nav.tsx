@@ -1,8 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut } from "lucide-react";
+import { LogOut, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const LINKS = [
@@ -14,6 +15,11 @@ const LINKS = [
 
 export function Nav() {
   const pathname = usePathname();
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/session").then((r) => r.json()).then((d) => setSignedIn(d.signedIn));
+  }, [pathname]);
 
   if (pathname === "/login") return null;
 
@@ -51,13 +57,23 @@ export function Nav() {
               </Link>
             );
           })}
-          <button
-            onClick={handleLogout}
-            aria-label="Log out"
-            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary ml-1"
-          >
-            <LogOut className="size-4" />
-          </button>
+          {signedIn === false && (
+            <Link
+              href="/login"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary ml-1"
+            >
+              <LogIn className="size-4" /> Sign in
+            </Link>
+          )}
+          {signedIn === true && (
+            <button
+              onClick={handleLogout}
+              aria-label="Log out"
+              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary ml-1"
+            >
+              <LogOut className="size-4" />
+            </button>
+          )}
         </nav>
       </div>
     </header>

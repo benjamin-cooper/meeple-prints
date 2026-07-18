@@ -20,8 +20,11 @@ async function search(query: string, creds: ProviderCredentials): Promise<Provid
     limit: "8",
     includes: "Images",
   });
+  // Etsy expects the x-api-key header as "keystring:sharedSecret", not the
+  // keystring alone, confirmed against a live 403 response body.
+  const apiKey = `${creds.etsyKeystring ?? ""}:${creds.etsySharedSecret ?? ""}`;
   const res = await fetch(`https://api.etsy.com/v3/application/listings/active?${params}`, {
-    headers: { "x-api-key": creds.etsyApiKey ?? "" },
+    headers: { "x-api-key": apiKey },
     signal: AbortSignal.timeout(10_000),
   });
   if (res.status === 401 || res.status === 403) {
@@ -52,6 +55,6 @@ export const etsyProvider: SearchProvider = {
   domain: "etsy.com",
   siteName: "Etsy",
   needsCredentials: true,
-  hasCredentials: (creds) => !!creds.etsyApiKey,
+  hasCredentials: (creds) => !!creds.etsyKeystring && !!creds.etsySharedSecret,
   search,
 };

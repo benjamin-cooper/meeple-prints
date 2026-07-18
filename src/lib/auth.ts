@@ -5,7 +5,7 @@
  * handlers (Node runtime).
  */
 export const SESSION_COOKIE = "meeple_session";
-const MAX_AGE_MS = 1000 * 60 * 60 * 24 * 30; // 30 days
+const MAX_AGE_MS = 1000 * 60 * 60 * 24 * 365; // 1 year: this is a single-owner tool, so "stay logged in" should mean it
 export const SESSION_MAX_AGE_SECONDS = MAX_AGE_MS / 1000;
 
 async function getKey(): Promise<CryptoKey> {

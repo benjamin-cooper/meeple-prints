@@ -132,14 +132,15 @@ export default function ConnectPage() {
     {
       label: "Etsy",
       configured: settings.hasEtsyApiKey,
-      envVars: "ETSY_API_KEY",
+      envVars: "ETSY_KEYSTRING, ETSY_SHARED_SECRET",
       instructions: (
         <>
           Create a Personal App at{" "}
           <a href="https://www.etsy.com/developers" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
             etsy.com/developers
           </a>{" "}
-          (approval usually takes a day or two) and set its keystring as <code className="font-mono">ETSY_API_KEY</code>.
+          (approval usually takes a day or two) and set its Keystring as <code className="font-mono">ETSY_KEYSTRING</code>{" "}
+          and Shared Secret as <code className="font-mono">ETSY_SHARED_SECRET</code>.
         </>
       ),
     },

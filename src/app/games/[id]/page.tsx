@@ -128,8 +128,8 @@ export default function GameDetailPage({ params }: { params: Promise<{ id: strin
       <div className="space-y-3 pt-2 border-t border-border">
         <div className="flex items-center justify-between gap-3 pt-4">
           <h2 className="text-sm font-semibold">Look for more</h2>
-          <Button size="sm" variant="secondary" className="gap-1.5" onClick={handleSearchAllSites} disabled={searching}>
-            <Search className="size-3.5" /> {searching ? "Searching…" : "Search all sites"}
+          <Button variant="secondary" className="gap-1.5" onClick={handleSearchAllSites} disabled={searching}>
+            <Search className="size-4" /> {searching ? "Searching…" : "Search all sites"}
           </Button>
         </div>
 

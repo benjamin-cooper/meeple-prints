@@ -202,8 +202,8 @@ export default function ConnectPage() {
             <p className="text-xs text-muted-foreground">Last daily sweep: {timeAgo(settings.lastCronRunAt, now)}</p>
             {isStale && (
               <p className="text-xs text-muted-foreground">
-                Expected once a day. Check that <code className="font-mono">CRON_SECRET</code> is set in your
-                hosting provider&apos;s environment variables and that the cron job is enabled.
+                Expected once a day. Check that <code className="font-mono">CRON_SECRET</code>{" "}
+                is set in your hosting provider&apos;s environment variables and that the cron job is enabled.
               </p>
             )}
           </div>

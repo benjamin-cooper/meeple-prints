@@ -66,9 +66,9 @@ export default function PublicSearchPage() {
       </div>
 
       {problems.length > 0 && (
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+        <div className="flex flex-wrap gap-2">
           {problems.map((o) => (
-            <span key={o.domain}>
+            <span key={o.domain} className="text-xs px-2 py-1 rounded-full bg-destructive/10 text-destructive">
               {o.siteName}: {o.error ? o.error : "not configured on this deployment"}
             </span>
           ))}

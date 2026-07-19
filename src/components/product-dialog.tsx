@@ -15,6 +15,7 @@ import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from "@/components/ui/select";
 import { GamePicker } from "@/components/game-picker";
+import { PersonalRating } from "@/components/personal-rating";
 import { PRODUCT_TYPES, PRODUCT_STATUSES } from "@/lib/constants";
 import type { GameSummary, Product } from "@/lib/types";
 
@@ -40,7 +41,9 @@ interface FormState {
   price: string;
   isFree: boolean;
   status: string;
+  rating: number | null;
   notes: string;
+  tags: string;
   gameIds: number[];
 }
 
@@ -63,14 +66,16 @@ function buildInitialForm(product: Product | null | undefined, defaultGameId?: n
       price: product.price != null ? String(product.price) : "",
       isFree: product.isFree,
       status: product.status,
+      rating: product.rating,
       notes: product.notes ?? "",
+      tags: product.tags ? (JSON.parse(product.tags) as string[]).join(", ") : "",
       gameIds: product.games.map((g) => g.id),
     };
   }
   return {
     url: "", title: "", description: "", thumbnailUrl: "", domain: "", siteName: "",
     type: "other", creator: "", price: "", isFree: false, status: "wishlist",
-    notes: "", gameIds: defaultGameId ? [defaultGameId] : [],
+    rating: null, notes: "", tags: "", gameIds: defaultGameId ? [defaultGameId] : [],
   };
 }
 
@@ -130,6 +135,7 @@ function ProductForm({
 
     setSaving(true);
     try {
+      const tags = form.tags.trim() ? form.tags.split(",").map((t) => t.trim()).filter(Boolean) : [];
       const payload = {
         url: form.url.trim(),
         title: form.title.trim(),
@@ -142,7 +148,9 @@ function ProductForm({
         price: form.price === "" ? null : Number(form.price),
         isFree: form.isFree,
         status: form.status,
+        rating: form.rating,
         notes: form.notes.trim() || null,
+        tags: tags.length ? tags : null,
         gameIds: form.gameIds,
       };
 
@@ -271,6 +279,17 @@ function ProductForm({
         <div className="space-y-1.5">
           <Label htmlFor="notes">Your notes</Label>
           <Textarea id="notes" rows={2} placeholder="Print settings, supports needed, how it turned out…" value={form.notes} onChange={(e) => set("notes", e.target.value)} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label>Your rating</Label>
+            <PersonalRating value={form.rating} onChange={(v) => set("rating", v)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="tags">Tags</Label>
+            <Input id="tags" placeholder="quick-print, painted" value={form.tags} onChange={(e) => set("tags", e.target.value)} />
+          </div>
         </div>
 
         <div className="space-y-1.5">

@@ -47,6 +47,9 @@ async function search(query: string, creds: ProviderCredentials): Promise<Provid
       price,
       currency: listing.price?.currency_code ?? "USD",
       isFree: price === 0,
+      rating: null,
+      ratingCount: null,
+      likesCount: null,
     };
   });
 }

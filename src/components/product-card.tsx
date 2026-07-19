@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { StatusPill } from "@/components/status-pill";
+import { RatingRow } from "@/components/rating-row";
 import { typeLabel } from "@/lib/constants";
 import type { Product } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,7 @@ export function ProductCard({ product, onClick }: { product: Product; onClick: (
 
       <div className="p-3 flex flex-col gap-1.5 flex-1">
         <p className="text-sm font-semibold leading-snug line-clamp-2">{product.title}</p>
+        <RatingRow rating={product.siteRating} ratingCount={product.siteRatingCount} likesCount={product.siteLikesCount} />
 
         <div className="flex flex-wrap gap-1">
           {product.games.slice(0, 3).map((g) => (

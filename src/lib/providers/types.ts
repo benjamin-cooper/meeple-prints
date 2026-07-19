@@ -14,6 +14,12 @@ export interface ProviderResult {
   price: number | null;
   currency: string | null;
   isFree: boolean;
+  /** 0-5 average rating. Only Printables exposes this. */
+  rating: number | null;
+  /** Review count backing `rating`. */
+  ratingCount: number | null;
+  /** Like/favorite count, for sites with no star-rating system (Thingiverse, Cults3D). */
+  likesCount: number | null;
 }
 
 export interface ProviderOutcome {

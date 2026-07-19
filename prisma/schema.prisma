@@ -25,32 +25,62 @@ model Game {
   updatedAt     DateTime @updatedAt
   lastScannedAt DateTime? // last time "Search all sites" ran for this game
 
-  products Product[]
+  products         Product[]
+  discoveredPrints DiscoveredPrint[]
 }
 
 // A saved 3D-printable accessory: an insert, organizer, miniature proxy,
 // terrain piece, token replacement, etc. found on any print-sharing site.
 model Product {
-  id           Int      @id @default(autoincrement())
-  url          String   @unique
-  title        String
-  description  String?
-  thumbnailUrl String?
-  domain       String   // host the link points to, e.g. "thingiverse.com"
-  siteName     String?  // human label, e.g. "Thingiverse"
-  type         String   @default("other") // insert, organizer, miniature, terrain, token, tuckbox, dice-tower, other
-  creator      String?
-  price        Float?
-  currency     String?  @default("USD")
-  isFree       Boolean  @default(false)
-  status       String   @default("wishlist") // wishlist | queued | printed | installed
-  rating       Int?     // 1-5 personal usefulness rating
-  notes        String?
-  tags         String?  // JSON-encoded string[]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  url             String   @unique
+  title           String
+  description     String?
+  thumbnailUrl    String?
+  domain          String   // host the link points to, e.g. "thingiverse.com"
+  siteName        String?  // human label, e.g. "Thingiverse"
+  type            String   @default("other") // insert, organizer, miniature, terrain, token, tuckbox, dice-tower, other
+  creator         String?
+  price           Float?
+  currency        String?  @default("USD")
+  isFree          Boolean  @default(false)
+  status          String   @default("wishlist") // wishlist | queued | printed | installed
+  rating          Int?     // 1-5 personal usefulness rating, set by you
+  siteRating      Float?   // 0-5 average rating from the source site, Printables only
+  siteRatingCount Int?     // review count backing siteRating
+  siteLikesCount  Int?     // like/favorite count, Thingiverse + Cults3D only
+  notes           String?
+  tags            String?  // JSON-encoded string[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   games Game[]
+}
+
+// A cached, relevance-filtered search hit for a game, refreshed on a
+// schedule. Not yet "saved" -- promoting one into a Product is what saving
+// means. Upserted by (gameId, url) on every scan.
+model DiscoveredPrint {
+  id           Int      @id @default(autoincrement())
+  gameId       Int
+  game         Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  url          String
+  title        String
+  thumbnailUrl String?
+  domain       String
+  siteName     String?
+  type         String   @default("other")
+  creator      String?
+  price        Float?
+  currency     String?
+  isFree       Boolean  @default(false)
+  rating       Float?
+  ratingCount  Int?
+  likesCount   Int?
+  firstSeenAt  DateTime @default(now())
+  lastSeenAt   DateTime @updatedAt
+
+  @@unique([gameId, url])
 }
 
 // Single-row settings for the connected BGG collection. This is a personal,

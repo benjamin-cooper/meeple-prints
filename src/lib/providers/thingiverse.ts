@@ -12,6 +12,7 @@ interface ThingiverseHit {
   thumbnail?: string;
   public_url?: string;
   creator?: { name?: string };
+  like_count?: number;
 }
 
 async function search(query: string, creds: ProviderCredentials): Promise<ProviderResult[]> {
@@ -34,6 +35,9 @@ async function search(query: string, creds: ProviderCredentials): Promise<Provid
     price: null,
     currency: null,
     isFree: true,
+    rating: null,
+    ratingCount: null,
+    likesCount: hit.like_count ?? null,
   }));
 }
 

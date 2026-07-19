@@ -27,9 +27,35 @@ export interface Product {
   isFree: boolean;
   status: string;
   rating: number | null;
+  siteRating: number | null;
+  siteRatingCount: number | null;
+  siteLikesCount: number | null;
   notes: string | null;
   tags: string | null;
   createdAt: string;
   updatedAt: string;
   games: GameSummary[];
 }
+
+export interface DiscoveredPrint {
+  id: number;
+  url: string;
+  title: string;
+  thumbnailUrl: string | null;
+  domain: string;
+  siteName: string | null;
+  type: string;
+  creator: string | null;
+  price: number | null;
+  currency: string | null;
+  isFree: boolean;
+  rating: number | null;
+  ratingCount: number | null;
+  likesCount: number | null;
+  createdAt: string;
+  game: GameSummary;
+}
+
+export type CatalogItem =
+  | (Product & { kind: "saved" })
+  | (DiscoveredPrint & { kind: "discovered" });

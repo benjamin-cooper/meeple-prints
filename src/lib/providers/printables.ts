@@ -12,7 +12,7 @@ const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 const QUERY = `
   query SearchModels($query: String!, $limit: Int, $ordering: SearchChoicesEnum) {
     result: searchPrints2(query: $query, printType: print, limit: $limit, ordering: $ordering) {
-      items { id name slug user { publicUsername } image { filePath } }
+      items { id name slug ratingAvg ratingCount user { publicUsername } image { filePath } }
     }
   }
 `;
@@ -21,6 +21,8 @@ interface PrintablesItem {
   id: string;
   name: string;
   slug: string;
+  ratingAvg?: string | null;
+  ratingCount?: number | null;
   user?: { publicUsername?: string };
   image?: { filePath?: string };
 }
@@ -41,15 +43,22 @@ async function search(query: string): Promise<ProviderResult[]> {
   const data = await res.json();
   const items: PrintablesItem[] = data?.data?.result?.items ?? [];
 
-  return items.map((item) => ({
-    url: `https://www.printables.com/model/${item.id}-${item.slug}`,
-    title: item.name,
-    thumbnailUrl: item.image?.filePath ? `https://media.printables.com/${item.image.filePath}` : null,
-    creator: item.user?.publicUsername ?? null,
-    price: null,
-    currency: null,
-    isFree: true,
-  }));
+  return items.map((item) => {
+    const ratingAvg = item.ratingAvg != null ? parseFloat(item.ratingAvg) : null;
+    const ratingCount = item.ratingCount ?? null;
+    return {
+      url: `https://www.printables.com/model/${item.id}-${item.slug}`,
+      title: item.name,
+      thumbnailUrl: item.image?.filePath ? `https://media.printables.com/${item.image.filePath}` : null,
+      creator: item.user?.publicUsername ?? null,
+      price: null,
+      currency: null,
+      isFree: true,
+      rating: ratingAvg && ratingCount ? ratingAvg : null,
+      ratingCount: ratingAvg && ratingCount ? ratingCount : null,
+      likesCount: null,
+    };
+  });
 }
 
 export const printablesProvider: SearchProvider = {

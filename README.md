@@ -21,14 +21,15 @@ Or through the workspace launch config: the `meeple-prints` entry in `../.claude
 
 BGG's community-maintained [3D Prints for Board Games GeekList](https://boardgamegeek.com/geeklist/186909/3d-prints-for-board-games) looked like a great way to seed a starting catalog, but BGG blocks API access to its GeekList endpoint entirely, even for a real logged-in browser session, so that idea didn't survive contact with the actual API. It's still linked from each game's page as a manual-browse option.
 
-**Discover** (`/discover`) searches Printables (no key needed), Thingiverse, Cults3D, and Etsy (each need a free API key set as an environment variable, see below) for a single game or a batch of unscanned games at once, merging every site's hits into one filterable grid: source, guessed accessory type, free-only, price sort, with a one-click Save per result. MakerWorld and MyMiniFactory don't expose a search API that works from a server, so those stay as deep-link buttons on each game's page instead.
+**Catalog** (`/`) auto-populates itself. A daily cron sweep (see Deploying below) searches Printables (no key needed), Thingiverse, Cults3D, and Etsy (each need a free API key, see `.env.example`) for a rolling batch of games, caches relevant hits as `DiscoveredPrint` rows, and Catalog shows them alongside your saved prints with a one-click Save to promote one into a real, trackable `Product`. Results are relevance-filtered (`src/lib/providers/relevance.ts`) before caching, since a raw site search can return noise (a query for "Slay the Spire: The Board Game" matching a "Connect 4 - Board game" listing purely on the words "board" and "game"); the filter requires every distinctive word of the game's name to appear in the result title. One known gap it can't solve: a short, generic game name (e.g. "Covenant") can still collide with an unrelated listing that happens to use that same common word. Items typed "Other" (the catch-all when the title doesn't hint at a real accessory type) are hidden by default; pick "Other" from the type filter to see them anyway. The "Scan now" button on Catalog and the "Search all sites" button on a game's page both trigger the same scan on demand, MakerWorld and MyMiniFactory don't expose a search API that works from a server, so those stay as deep-link buttons on each game's page.
 
 **Games** (`/games`) sorts your collection by print coverage first, so the games with zero saved prints surface at the top instead of getting lost in an alphabetical list.
 
 ## Data model
 
 - `Game`: cached from your BGG collection.
-- `Product`: a saved print, many-to-many with `Game` (a generic dice tower or a card holder that fits several games doesn't need to be saved twice).
+- `Product`: a saved print, many-to-many with `Game` (a generic dice tower or a card holder that fits several games doesn't need to be saved twice). `siteRating`/`siteRatingCount`/`siteLikesCount` carry over the source site's popularity metric at save time, distinct from `rating`, your own 1-5 personal usefulness rating.
+- `DiscoveredPrint`: a cached, not-yet-saved search hit, one row per `(gameId, url)`, refreshed on every scan.
 - `Settings`: a single row holding the connected BGG session.
 
 Search provider credentials (Thingiverse, Cults3D, Etsy) are environment variables, not database rows. See `.env.example` and the Connect page, which shows each one's configured/not-configured status read live from the environment.
@@ -46,6 +47,8 @@ Prisma's own `migrate deploy` doesn't understand the `libsql://` scheme, so sche
 ```
 turso db shell meeple-prints < prisma/migrations/<new-migration-folder>/migration.sql
 ```
+
+The daily auto-scan (`vercel.json`) needs `CRON_SECRET` set in Vercel's project env vars (not just `.env.example`) -- Vercel signs its cron requests with it automatically, and the route rejects anything without a matching bearer token. `AUTO_SCAN_BATCH_SIZE` (default 10) is kept conservative since Vercel's free Hobby tier caps function duration at 10s regardless of games-per-run; raise it if cron logs show headroom. Right after deploying (or any time you don't want to wait for the daily sweep to catch up), run `npx tsx scripts/full-scan.ts` once to sweep the whole collection in one go -- point `DATABASE_URL`/`DATABASE_AUTH_TOKEN` at Turso to run it against production instead of local `dev.db`.
 
 ## Notes for later
 

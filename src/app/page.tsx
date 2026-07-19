@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Search, Plus, LayoutGrid, Rows3 } from "lucide-react";
+import { toast } from "sonner";
+import { Search, Plus, LayoutGrid, Rows3, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,17 +12,24 @@ import {
 import { ProductCard } from "@/components/product-card";
 import { ProductRow } from "@/components/product-row";
 import { ProductDialog } from "@/components/product-dialog";
+import { DiscoveredPrintCard } from "@/components/discovered-print-card";
 import { PRODUCT_TYPES, PRODUCT_STATUSES, SITE_LABELS } from "@/lib/constants";
-import type { GameSummary, Product } from "@/lib/types";
+import type { CatalogItem, Game, GameSummary, Product } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type ViewMode = "marketplace" | "spreadsheet";
 type SortMode = "newest" | "title" | "price-low" | "price-high";
+type GameWithScan = Game & { lastScannedAt: string | null };
+
+function itemGames(item: CatalogItem): GameSummary[] {
+  return item.kind === "saved" ? item.games : [item.game];
+}
 
 export default function CatalogPage() {
-  const [products, setProducts] = useState<Product[] | null>(null);
-  const [games, setGames] = useState<GameSummary[]>([]);
+  const [items, setItems] = useState<CatalogItem[] | null>(null);
+  const [games, setGames] = useState<GameWithScan[]>([]);
   const [view, setView] = useState<ViewMode>("marketplace");
+  const [scanning, setScanning] = useState(false);
 
   const [query, setQuery] = useState("");
   const [gameFilter, setGameFilter] = useState<string>("all");
@@ -34,15 +42,18 @@ export default function CatalogPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
 
+  const loadCatalog = () => fetch("/api/catalog").then((r) => r.json()).then(setItems);
+  const loadGames = () => fetch("/api/games").then((r) => r.json()).then(setGames);
+
   useEffect(() => {
-    fetch("/api/products").then((r) => r.json()).then(setProducts);
-    fetch("/api/games").then((r) => r.json()).then(setGames);
+    loadCatalog();
+    loadGames();
   }, []);
 
   const domains = useMemo(() => {
-    const set = new Set((products ?? []).map((p) => p.domain));
+    const set = new Set((items ?? []).map((i) => i.domain));
     return Array.from(set).sort();
-  }, [products]);
+  }, [items]);
 
   // Base UI's <Select.Value> only knows an item's label once the popup has
   // mounted, unless the root is given a value->label map up front.
@@ -65,17 +76,20 @@ export default function CatalogPage() {
   const sortItems = { newest: "Newest", title: "Title A-Z", "price-low": "Price: Low", "price-high": "Price: High" };
 
   const filtered = useMemo(() => {
-    if (!products) return [];
+    if (!items) return [];
     const q = query.trim().toLowerCase();
 
-    let list = products.filter((p) => {
-      if (gameFilter !== "all" && !p.games.some((g) => String(g.id) === gameFilter)) return false;
-      if (typeFilter !== "all" && p.type !== typeFilter) return false;
-      if (domainFilter !== "all" && p.domain !== domainFilter) return false;
-      if (statusFilter !== "all" && p.status !== statusFilter) return false;
-      if (freeOnly && !p.isFree) return false;
+    let list = items.filter((item) => {
+      const itemGameList = itemGames(item);
+      if (gameFilter !== "all" && !itemGameList.some((g) => String(g.id) === gameFilter)) return false;
+      if (typeFilter === "all" && item.type === "other") return false;
+      if (typeFilter !== "all" && item.type !== typeFilter) return false;
+      if (domainFilter !== "all" && item.domain !== domainFilter) return false;
+      if (statusFilter !== "all" && (item.kind !== "saved" || item.status !== statusFilter)) return false;
+      if (freeOnly && !item.isFree) return false;
       if (q) {
-        const hay = [p.title, p.creator ?? "", p.notes ?? "", ...p.games.map((g) => g.name)].join(" ").toLowerCase();
+        const notes = item.kind === "saved" ? item.notes ?? "" : "";
+        const hay = [item.title, item.creator ?? "", notes, ...itemGameList.map((g) => g.name)].join(" ").toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
@@ -91,21 +105,45 @@ export default function CatalogPage() {
     });
 
     return list;
-  }, [products, query, gameFilter, typeFilter, domainFilter, statusFilter, freeOnly, sort]);
+  }, [items, query, gameFilter, typeFilter, domainFilter, statusFilter, freeOnly, sort]);
+
+  const savedFiltered = useMemo(() => filtered.filter((i) => i.kind === "saved"), [filtered]);
 
   const openAdd = () => { setEditing(null); setDialogOpen(true); };
   const openEdit = (p: Product) => { setEditing(p); setDialogOpen(true); };
 
   const upsertLocal = (p: Product) => {
-    setProducts((prev) => {
-      if (!prev) return [p];
-      const exists = prev.some((x) => x.id === p.id);
-      return exists ? prev.map((x) => (x.id === p.id ? p : x)) : [p, ...prev];
+    setItems((prev) => {
+      if (!prev) return [{ ...p, kind: "saved" }];
+      const withoutDiscoveredDupe = prev.filter((i) => !(i.kind === "discovered" && i.url === p.url));
+      const exists = withoutDiscoveredDupe.some((i) => i.kind === "saved" && i.id === p.id);
+      return exists
+        ? withoutDiscoveredDupe.map((i) => (i.kind === "saved" && i.id === p.id ? { ...p, kind: "saved" } : i))
+        : [{ ...p, kind: "saved" }, ...withoutDiscoveredDupe];
     });
   };
-  const removeLocal = (id: number) => setProducts((prev) => prev?.filter((p) => p.id !== id) ?? prev);
+  const removeLocal = (id: number) =>
+    setItems((prev) => prev?.filter((i) => !(i.kind === "saved" && i.id === id)) ?? prev);
 
-  const hasAnyProducts = (products?.length ?? 0) > 0;
+  const handleScanNow = async () => {
+    setScanning(true);
+    try {
+      const res = await fetch("/api/catalog/scan", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Scan failed.");
+      toast.success(`Scanned ${data.scanned} game${data.scanned === 1 ? "" : "s"}, found ${data.newPrints} new print${data.newPrints === 1 ? "" : "s"}.`);
+      loadCatalog();
+      loadGames();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Scan failed.");
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const hasAnyItems = (items?.length ?? 0) > 0;
+  const collectionGames = games.filter((g) => g.inCollection);
+  const scannedCount = collectionGames.filter((g) => g.lastScannedAt).length;
 
   return (
     <div className="space-y-5">
@@ -113,12 +151,18 @@ export default function CatalogPage() {
         <div>
           <h1 className="font-display font-extrabold uppercase text-3xl tracking-tight leading-none">Catalog</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {products === null ? "Loading…" : `${filtered.length} of ${products.length} print${products.length === 1 ? "" : "s"}`}
+            {items === null ? "Loading…" : `${filtered.length} of ${items.length} print${items.length === 1 ? "" : "s"}`}
+            {collectionGames.length > 0 && ` (${scannedCount} of ${collectionGames.length} games scanned)`}
           </p>
         </div>
-        <Button onClick={openAdd} className="gap-1.5 shrink-0">
-          <Plus className="size-4" /> Add a print
-        </Button>
+        <div className="flex gap-2 shrink-0">
+          <Button variant="secondary" onClick={handleScanNow} disabled={scanning} className="gap-1.5">
+            <RefreshCw className={cn("size-4", scanning && "animate-spin")} /> {scanning ? "Scanning…" : "Scan now"}
+          </Button>
+          <Button onClick={openAdd} className="gap-1.5">
+            <Plus className="size-4" /> Add a print
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col gap-3">
@@ -204,17 +248,17 @@ export default function CatalogPage() {
         </div>
       </div>
 
-      {products === null && (
+      {items === null && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
           {Array.from({ length: 10 }).map((_, i) => <Skeleton key={i} className="aspect-[4/3.6] rounded-lg" />)}
         </div>
       )}
 
-      {products !== null && !hasAnyProducts && (
+      {items !== null && !hasAnyItems && (
         <div className="text-center py-20 border border-dashed border-border rounded-lg bed-grid">
-          <p className="font-display font-bold text-xl uppercase mb-1">Nothing saved yet</p>
+          <p className="font-display font-bold text-xl uppercase mb-1">Nothing here yet</p>
           <p className="text-sm text-muted-foreground mb-4 max-w-sm mx-auto">
-            Connect your BGG collection, then search Discover for prints, or add your first find by pasting a link.
+            Connect your BGG collection to start auto-discovering prints, or add your first find by pasting a link.
           </p>
           <div className="flex gap-2 justify-center">
             <Button onClick={openAdd} className="gap-1.5"><Plus className="size-4" /> Add a print</Button>
@@ -223,7 +267,7 @@ export default function CatalogPage() {
         </div>
       )}
 
-      {products !== null && hasAnyProducts && filtered.length === 0 && (
+      {items !== null && hasAnyItems && filtered.length === 0 && (
         <div className="text-center py-16 text-muted-foreground">
           <p>No prints match those filters.</p>
         </div>
@@ -231,7 +275,13 @@ export default function CatalogPage() {
 
       {filtered.length > 0 && view === "marketplace" && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-          {filtered.map((p) => <ProductCard key={p.id} product={p} onClick={() => openEdit(p)} />)}
+          {filtered.map((item) =>
+            item.kind === "saved" ? (
+              <ProductCard key={`p-${item.id}`} product={item} onClick={() => openEdit(item)} />
+            ) : (
+              <DiscoveredPrintCard key={`d-${item.id}`} item={item} onSaved={upsertLocal} />
+            )
+          )}
         </div>
       )}
 
@@ -250,9 +300,14 @@ export default function CatalogPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((p) => <ProductRow key={p.id} product={p} onClick={() => openEdit(p)} />)}
+              {savedFiltered.map((p) => <ProductRow key={p.id} product={p} onClick={() => openEdit(p)} />)}
             </tbody>
           </table>
+          {savedFiltered.length === 0 && (
+            <p className="text-center py-8 text-sm text-muted-foreground">
+              Not-yet-saved discoveries only show in the marketplace view above. Save one to see it here.
+            </p>
+          )}
         </div>
       )}
 

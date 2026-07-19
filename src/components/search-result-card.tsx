@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { RatingRow } from "@/components/rating-row";
 import { typeLabel } from "@/lib/constants";
 import type { ProviderResult } from "@/lib/providers/types";
 import type { Product } from "@/lib/types";
@@ -37,6 +38,9 @@ export function SearchResultCard({ result, domain, siteName, type, gameId, onSav
           price: result.price,
           currency: result.currency,
           isFree: result.isFree,
+          siteRating: result.rating,
+          siteRatingCount: result.ratingCount,
+          siteLikesCount: result.likesCount,
           type,
           status: "wishlist",
           gameIds: [gameId],
@@ -71,6 +75,7 @@ export function SearchResultCard({ result, domain, siteName, type, gameId, onSav
           {result.title}
         </a>
         {result.creator && <p className="text-xs text-muted-foreground truncate">by {result.creator}</p>}
+        <RatingRow rating={result.rating} ratingCount={result.ratingCount} likesCount={result.likesCount} />
         <div className="mt-auto pt-1.5 flex items-center justify-between gap-2">
           <span className="font-mono text-xs font-medium text-status-printed">
             {result.isFree ? "Free" : result.price != null ? `$${result.price.toFixed(2)}` : "—"}

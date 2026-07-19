@@ -9,8 +9,9 @@ export const config = {
 /**
  * Reading is public. Anyone can browse the catalog, games, and search
  * results. Anything that writes (saving/editing/deleting, connecting BGG,
- * running a Discover search that spends API quota, unfurling a URL server
- * side) needs the owner's session.
+ * running a scan that spends API quota, unfurling a URL server side) needs
+ * the owner's session. The cron scan route is the one exception -- it's a
+ * GET (so it passes through here) and checks its own bearer secret instead.
  */
 export async function proxy(request: NextRequest) {
   if (request.method === "GET" || request.method === "HEAD") {

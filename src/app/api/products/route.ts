@@ -14,6 +14,7 @@ export async function POST(request: NextRequest) {
   const {
     url, title, description, thumbnailUrl, domain, siteName,
     type, creator, price, currency, isFree, status, rating, notes, tags,
+    siteRating, siteRatingCount, siteLikesCount,
     gameIds,
   } = body ?? {};
 
@@ -43,6 +44,9 @@ export async function POST(request: NextRequest) {
         isFree: !!isFree,
         status: status || "wishlist",
         rating: rating || null,
+        siteRating: siteRating ?? null,
+        siteRatingCount: siteRatingCount ?? null,
+        siteLikesCount: siteLikesCount ?? null,
         notes: notes || null,
         tags: tags ? JSON.stringify(tags) : null,
         games: { connect: gameIds.map((id: number) => ({ id })) },

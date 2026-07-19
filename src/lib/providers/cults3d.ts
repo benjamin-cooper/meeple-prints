@@ -17,6 +17,7 @@ const QUERY = `
         illustrationImageUrl
         price(currency: USD) { value }
         creator { nick }
+        likesCount
       }
     }
   }
@@ -28,6 +29,7 @@ interface CultsResult {
   illustrationImageUrl?: string;
   price?: { value?: number } | null;
   creator?: { nick?: string };
+  likesCount?: number | null;
 }
 
 async function search(query: string, creds: ProviderCredentials): Promise<ProviderResult[]> {
@@ -57,6 +59,9 @@ async function search(query: string, creds: ProviderCredentials): Promise<Provid
       price: price && price > 0 ? price : null,
       currency: price && price > 0 ? "USD" : null,
       isFree: !price || price === 0,
+      rating: null,
+      ratingCount: null,
+      likesCount: r.likesCount ?? null,
     };
   });
 }

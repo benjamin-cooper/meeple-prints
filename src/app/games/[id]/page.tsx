@@ -4,7 +4,7 @@ import { use, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Plus, ExternalLink, Search } from "lucide-react";
+import { Plus, ExternalLink, Search, FolderMinus, FolderPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProductCard } from "@/components/product-card";
@@ -73,6 +73,29 @@ export default function GameDetailPage({ params }: { params: Promise<{ id: strin
     setGame((g) => (g ? { ...g, products: g.products.filter((p) => p.id !== productId) } : g));
   };
 
+  const setInCollection = async (inCollection: boolean) => {
+    if (!game) return;
+    try {
+      const res = await fetch(`/api/games/${game.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inCollection }),
+      });
+      if (!res.ok) throw new Error();
+      setGame((g) => (g ? { ...g, inCollection } : g));
+    } catch {
+      toast.error("Couldn't update that.");
+    }
+  };
+
+  const handleRemoveFromCollection = () => {
+    setInCollection(false);
+    toast.success("Removed from your collection.", {
+      duration: 8000,
+      action: { label: "Undo", onClick: () => setInCollection(true) },
+    });
+  };
+
   if (!game) {
     return (
       <div className="space-y-4">
@@ -95,7 +118,14 @@ export default function GameDetailPage({ params }: { params: Promise<{ id: strin
         )}
         <div className="flex-1 min-w-0 space-y-2">
           <Link href="/games" className="text-xs text-muted-foreground hover:text-foreground">← All games</Link>
-          <h1 className="font-display font-extrabold uppercase text-3xl tracking-tight leading-none">{game.name}</h1>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="font-display font-extrabold uppercase text-3xl tracking-tight leading-none">{game.name}</h1>
+            {!game.inCollection && (
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                Not in your BGG collection
+              </span>
+            )}
+          </div>
           {game.yearPublished && <p className="text-sm text-muted-foreground">{game.yearPublished}</p>}
           <p className="text-sm text-muted-foreground">
             {game.products.length} print{game.products.length === 1 ? "" : "s"} saved
@@ -113,6 +143,15 @@ export default function GameDetailPage({ params }: { params: Promise<{ id: strin
             >
               BGG <ExternalLink className="size-3.5" />
             </Button>
+            {game.inCollection ? (
+              <Button variant="ghost" className="gap-1.5 text-muted-foreground hover:text-destructive" onClick={handleRemoveFromCollection}>
+                <FolderMinus className="size-4" /> Remove from collection
+              </Button>
+            ) : (
+              <Button variant="ghost" className="gap-1.5 text-muted-foreground" onClick={() => setInCollection(true)}>
+                <FolderPlus className="size-4" /> Add back to collection
+              </Button>
+            )}
           </div>
         </div>
       </div>

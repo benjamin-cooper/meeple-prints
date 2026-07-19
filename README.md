@@ -25,6 +25,8 @@ BGG's community-maintained [3D Prints for Board Games GeekList](https://boardgam
 
 **Games** (`/games`) sorts your collection by print coverage first, so the games with zero saved prints surface at the top instead of getting lost in an alphabetical list.
 
+A saved print's status (Saved / Queued to Print / Printed / In the Box) can be changed inline from its card or spreadsheet row, without opening the full edit dialog -- the one field you're likely to touch every time you finish a print. Your own 1-5 usefulness rating and free-text tags live in the edit dialog and show up on the card and in the spreadsheet view once set.
+
 ## Data model
 
 - `Game`: cached from your BGG collection.
@@ -48,9 +50,8 @@ Prisma's own `migrate deploy` doesn't understand the `libsql://` scheme, so sche
 turso db shell meeple-prints < prisma/migrations/<new-migration-folder>/migration.sql
 ```
 
-The daily auto-scan (`vercel.json`) needs `CRON_SECRET` set in Vercel's project env vars (not just `.env.example`) -- Vercel signs its cron requests with it automatically, and the route rejects anything without a matching bearer token. `AUTO_SCAN_BATCH_SIZE` (default 10) is kept conservative since Vercel's free Hobby tier caps function duration at 10s regardless of games-per-run; raise it if cron logs show headroom. Right after deploying (or any time you don't want to wait for the daily sweep to catch up), run `npx tsx scripts/full-scan.ts` once to sweep the whole collection in one go -- point `DATABASE_URL`/`DATABASE_AUTH_TOKEN` at Turso to run it against production instead of local `dev.db`.
+The daily auto-scan (`vercel.json`) needs `CRON_SECRET` set in Vercel's project env vars (not just `.env.example`) -- Vercel signs its cron requests with it automatically, and the route rejects anything without a matching bearer token. `AUTO_SCAN_BATCH_SIZE` (default 10) is a soft cap: both the cron and manual scan routes set `maxDuration = 60`, and `scanNextBatch` (`src/lib/scan.ts`) stops starting new games once 45s have elapsed rather than risk exceeding that and getting killed mid-run. A game skipped this way is simply first in line next run, since games are scanned in `lastScannedAt` order. Right after deploying (or any time you don't want to wait for the daily sweep to catch up), run `npx tsx scripts/full-scan.ts` once to sweep the whole collection in one go -- point `DATABASE_URL`/`DATABASE_AUTH_TOKEN` at Turso to run it against production instead of local `dev.db`.
 
 ## Notes for later
 
-- No manual dark-mode toggle is wired up yet, though the CSS variables already support a `.dark` class the way the sibling projects do.
 - Price/free defaults on unfurl are a per-domain guess (Thingiverse, Printables, MakerWorld, and MyMiniFactory default to free; everything else doesn't) and are always editable before saving.

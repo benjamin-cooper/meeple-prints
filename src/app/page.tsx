@@ -25,6 +25,42 @@ function itemGames(item: CatalogItem): GameSummary[] {
   return item.kind === "saved" ? item.games : [item.game];
 }
 
+interface FilterState {
+  gameFilter: string;
+  typeFilter: string;
+  domainFilter: string;
+  statusFilter: string;
+  freeOnly: boolean;
+  query: string;
+}
+
+type FilterKey = keyof FilterState;
+
+/**
+ * One predicate shared by the results list and every facet's "what's
+ * actually available" computation. Passing `exclude` skips that filter's
+ * own condition, so a dropdown's option list reflects every OTHER active
+ * filter without narrowing against itself.
+ */
+function matchesFilters(item: CatalogItem, f: FilterState, exclude?: FilterKey): boolean {
+  const itemGameList = itemGames(item);
+  if (exclude !== "gameFilter" && f.gameFilter !== "all" && !itemGameList.some((g) => String(g.id) === f.gameFilter)) return false;
+  if (exclude !== "typeFilter") {
+    if (f.typeFilter === "all" && item.type === "other") return false;
+    if (f.typeFilter !== "all" && item.type !== f.typeFilter) return false;
+  }
+  if (exclude !== "domainFilter" && f.domainFilter !== "all" && item.domain !== f.domainFilter) return false;
+  if (exclude !== "statusFilter" && f.statusFilter !== "all" && (item.kind !== "saved" || item.status !== f.statusFilter)) return false;
+  if (exclude !== "freeOnly" && f.freeOnly && !item.isFree) return false;
+  if (exclude !== "query" && f.query.trim()) {
+    const q = f.query.trim().toLowerCase();
+    const notes = item.kind === "saved" ? item.notes ?? "" : "";
+    const hay = [item.title, item.creator ?? "", notes, ...itemGameList.map((g) => g.name)].join(" ").toLowerCase();
+    if (!hay.includes(q)) return false;
+  }
+  return true;
+}
+
 export default function CatalogPage() {
   const [items, setItems] = useState<CatalogItem[] | null>(null);
   const [games, setGames] = useState<GameWithScan[]>([]);
@@ -50,50 +86,91 @@ export default function CatalogPage() {
     loadGames();
   }, []);
 
-  const domains = useMemo(() => {
-    const set = new Set((items ?? []).map((i) => i.domain));
+  const filterState: FilterState = { gameFilter, typeFilter, domainFilter, statusFilter, freeOnly, query };
+
+  // Each facet's option list is computed from whatever still matches every
+  // OTHER active filter, so picking a game hides types/sources/statuses
+  // nothing of that game has, and vice versa -- systematic across all four.
+  const availableGameIds = useMemo(() => {
+    const set = new Set<string>();
+    (items ?? []).forEach((item) => {
+      if (matchesFilters(item, filterState, "gameFilter")) {
+        itemGames(item).forEach((g) => set.add(String(g.id)));
+      }
+    });
+    return set;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, typeFilter, domainFilter, statusFilter, freeOnly, query]);
+
+  const availableTypes = useMemo(() => {
+    const set = new Set<string>();
+    (items ?? []).forEach((item) => {
+      if (matchesFilters(item, filterState, "typeFilter")) set.add(item.type);
+    });
+    return set;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, gameFilter, domainFilter, statusFilter, freeOnly, query]);
+
+  const availableDomains = useMemo(() => {
+    const set = new Set<string>();
+    (items ?? []).forEach((item) => {
+      if (matchesFilters(item, filterState, "domainFilter")) set.add(item.domain);
+    });
+    return set;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, gameFilter, typeFilter, statusFilter, freeOnly, query]);
+
+  const availableStatuses = useMemo(() => {
+    const set = new Set<string>();
+    (items ?? []).forEach((item) => {
+      if (item.kind === "saved" && matchesFilters(item, filterState, "statusFilter")) set.add(item.status);
+    });
+    return set;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, gameFilter, typeFilter, domainFilter, freeOnly, query]);
+
+  const visibleGames = useMemo(
+    () => games.filter((g) => availableGameIds.has(String(g.id)) || String(g.id) === gameFilter),
+    [games, availableGameIds, gameFilter]
+  );
+  const visibleTypes = useMemo(
+    () => PRODUCT_TYPES.filter((t) => availableTypes.has(t.value) || t.value === typeFilter),
+    [availableTypes, typeFilter]
+  );
+  const visibleDomains = useMemo(() => {
+    const set = new Set(availableDomains);
+    if (domainFilter !== "all") set.add(domainFilter);
     return Array.from(set).sort();
-  }, [items]);
+  }, [availableDomains, domainFilter]);
+  const visibleStatuses = useMemo(
+    () => PRODUCT_STATUSES.filter((s) => availableStatuses.has(s.value) || s.value === statusFilter),
+    [availableStatuses, statusFilter]
+  );
 
   // Base UI's <Select.Value> only knows an item's label once the popup has
   // mounted, unless the root is given a value->label map up front.
   const gameItems = useMemo(
-    () => ({ all: "All games", ...Object.fromEntries(games.map((g) => [String(g.id), g.name])) }),
-    [games]
+    () => ({ all: "All games", ...Object.fromEntries(visibleGames.map((g) => [String(g.id), g.name])) }),
+    [visibleGames]
   );
   const typeItems = useMemo(
-    () => ({ all: "All types", ...Object.fromEntries(PRODUCT_TYPES.map((t) => [t.value, t.label])) }),
-    []
+    () => ({ all: "All types", ...Object.fromEntries(visibleTypes.map((t) => [t.value, t.label])) }),
+    [visibleTypes]
   );
   const domainItems = useMemo(
-    () => ({ all: "All sources", ...Object.fromEntries(domains.map((d) => [d, SITE_LABELS[d] ?? d])) }),
-    [domains]
+    () => ({ all: "All sources", ...Object.fromEntries(visibleDomains.map((d) => [d, SITE_LABELS[d] ?? d])) }),
+    [visibleDomains]
   );
   const statusItems = useMemo(
-    () => ({ all: "All statuses", ...Object.fromEntries(PRODUCT_STATUSES.map((s) => [s.value, s.label])) }),
-    []
+    () => ({ all: "All statuses", ...Object.fromEntries(visibleStatuses.map((s) => [s.value, s.label])) }),
+    [visibleStatuses]
   );
   const sortItems = { newest: "Newest", title: "Title A-Z", "price-low": "Price: Low", "price-high": "Price: High" };
 
   const filtered = useMemo(() => {
     if (!items) return [];
-    const q = query.trim().toLowerCase();
 
-    let list = items.filter((item) => {
-      const itemGameList = itemGames(item);
-      if (gameFilter !== "all" && !itemGameList.some((g) => String(g.id) === gameFilter)) return false;
-      if (typeFilter === "all" && item.type === "other") return false;
-      if (typeFilter !== "all" && item.type !== typeFilter) return false;
-      if (domainFilter !== "all" && item.domain !== domainFilter) return false;
-      if (statusFilter !== "all" && (item.kind !== "saved" || item.status !== statusFilter)) return false;
-      if (freeOnly && !item.isFree) return false;
-      if (q) {
-        const notes = item.kind === "saved" ? item.notes ?? "" : "";
-        const hay = [item.title, item.creator ?? "", notes, ...itemGameList.map((g) => g.name)].join(" ").toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      return true;
-    });
+    let list = items.filter((item) => matchesFilters(item, filterState));
 
     list = [...list].sort((a, b) => {
       switch (sort) {
@@ -105,6 +182,7 @@ export default function CatalogPage() {
     });
 
     return list;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, query, gameFilter, typeFilter, domainFilter, statusFilter, freeOnly, sort]);
 
   const savedFiltered = useMemo(() => filtered.filter((i) => i.kind === "saved"), [filtered]);
@@ -181,7 +259,7 @@ export default function CatalogPage() {
             <SelectTrigger className="w-[160px]"><SelectValue placeholder="All games" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All games</SelectItem>
-              {games.map((g) => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
+              {visibleGames.map((g) => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
             </SelectContent>
           </Select>
 
@@ -189,7 +267,7 @@ export default function CatalogPage() {
             <SelectTrigger className="w-[150px]"><SelectValue placeholder="All types" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All types</SelectItem>
-              {PRODUCT_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+              {visibleTypes.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
             </SelectContent>
           </Select>
 
@@ -197,7 +275,7 @@ export default function CatalogPage() {
             <SelectTrigger className="w-[150px]"><SelectValue placeholder="All sources" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All sources</SelectItem>
-              {domains.map((d) => <SelectItem key={d} value={d}>{SITE_LABELS[d] ?? d}</SelectItem>)}
+              {visibleDomains.map((d) => <SelectItem key={d} value={d}>{SITE_LABELS[d] ?? d}</SelectItem>)}
             </SelectContent>
           </Select>
 
@@ -205,7 +283,7 @@ export default function CatalogPage() {
             <SelectTrigger className="w-[150px]"><SelectValue placeholder="All statuses" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All statuses</SelectItem>
-              {PRODUCT_STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+              {visibleStatuses.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
             </SelectContent>
           </Select>
 

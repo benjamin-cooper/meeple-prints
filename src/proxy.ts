@@ -7,25 +7,28 @@ export const config = {
 };
 
 /**
- * Reading is public. Anyone can browse the catalog, games, and search
- * results. Anything that writes (saving/editing/deleting, connecting BGG,
- * running a scan that spends API quota, unfurling a URL server side) needs
- * the owner's session. The cron scan route is the one exception -- it's a
- * GET (so it passes through here) and checks its own bearer secret instead.
+ * Reading requires the owner's session, same as writing. The only public
+ * paths are the general print-search tool (not tied to the owner's
+ * collection), the session-check endpoint Nav polls to decide whether to
+ * show "Sign in", and the cron scan route, which authenticates itself via
+ * a bearer secret instead of a browser session (see src/app/api/cron/scan).
  */
+const PUBLIC_PATHS = ["/search", "/api/public-search", "/api/auth/session", "/api/cron/scan"];
+
 export async function proxy(request: NextRequest) {
-  if (request.method === "GET" || request.method === "HEAD") {
+  const { pathname } = request.nextUrl;
+  if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
     return NextResponse.next();
   }
 
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   if (await isValidSessionToken(token)) return NextResponse.next();
 
-  if (request.nextUrl.pathname.startsWith("/api/")) {
+  if (pathname.startsWith("/api/")) {
     return Response.json({ error: "Connect to BoardGameGeek to add or save." }, { status: 401 });
   }
 
   const loginUrl = new URL("/login", request.url);
-  loginUrl.searchParams.set("from", request.nextUrl.pathname);
+  loginUrl.searchParams.set("from", pathname);
   return NextResponse.redirect(loginUrl);
 }

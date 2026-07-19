@@ -22,7 +22,8 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Login failed.");
-      window.location.href = "/";
+      const from = new URLSearchParams(window.location.search).get("from");
+      window.location.href = from && from.startsWith("/") ? from : "/";
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Login failed.");
       setLoggingIn(false);

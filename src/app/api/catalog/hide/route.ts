@@ -6,6 +6,7 @@
  * game's own name (Covenant the board game vs. "Iron Covenant" the fantasy
  * faction). Scans never reset this back to false, so it stays gone.
  */
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { NextRequest } from "next/server";
 
@@ -14,6 +15,13 @@ export async function POST(request: NextRequest) {
   const printId = Number(id);
   if (!printId) return Response.json({ error: "id is required." }, { status: 400 });
 
-  await prisma.discoveredPrint.update({ where: { id: printId }, data: { hidden: true } });
+  try {
+    await prisma.discoveredPrint.update({ where: { id: printId }, data: { hidden: true } });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
+      return Response.json({ error: "That print doesn't exist." }, { status: 404 });
+    }
+    throw err;
+  }
   return Response.json({ ok: true });
 }

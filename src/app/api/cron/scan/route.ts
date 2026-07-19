@@ -4,8 +4,9 @@
  * paths with GET. Vercel sends "Authorization: Bearer $CRON_SECRET"
  * automatically when CRON_SECRET is set, which is how this route confirms
  * the request actually came from Vercel's scheduler and not a public
- * crawler hitting the same path. GET requests skip the session-cookie gate
- * in proxy.ts, so this bearer check is this route's only protection.
+ * crawler hitting the same path. This path is listed in PUBLIC_PATHS in
+ * proxy.ts (it has no browser session to check), so this bearer check is
+ * its only protection.
  */
 import { scanNextBatch } from "@/lib/scan";
 import { prisma } from "@/lib/prisma";

@@ -61,6 +61,15 @@ async function scanOne(game: { id: number; name: string }): Promise<number> {
   return Math.max(0, after - before);
 }
 
+// Cron and manual scan routes both cap the request at maxDuration = 60s. A
+// single game can take up to ~10s (every provider's own fetch timeout, run
+// in parallel) plus the 400ms courtesy delay, so a full batch of 10 could
+// exceed 60s and get killed mid-run. Stop starting new games once the
+// remaining time no longer comfortably fits a worst-case game so the
+// function always returns cleanly; games ordered by lastScannedAt asc means
+// anything skipped this run is simply first in line next time.
+const BATCH_TIME_BUDGET_MS = 45_000;
+
 export async function scanNextBatch(limit: number): Promise<{ scanned: number; newPrints: number }> {
   // SQLite orders NULL as smallest, so never-scanned games naturally sort first.
   const games = await prisma.game.findMany({
@@ -69,13 +78,17 @@ export async function scanNextBatch(limit: number): Promise<{ scanned: number; n
     take: limit,
   });
 
+  const start = Date.now();
+  let scanned = 0;
   let newPrints = 0;
   for (const game of games) {
+    if (Date.now() - start > BATCH_TIME_BUDGET_MS) break;
     newPrints += await scanOne(game);
+    scanned++;
     await new Promise((r) => setTimeout(r, 400));
   }
 
-  return { scanned: games.length, newPrints };
+  return { scanned, newPrints };
 }
 
 /** Sweeps every in-collection game once, regardless of batch-size caps. For the one-off full-scan script. */

@@ -17,7 +17,7 @@ Or through the workspace launch config: the `meeple-prints` entry in `../.claude
 
 ## How it works
 
-**Connect** (`/connect`) logs into your BGG account (session token only, never the password, is stored) and pulls your owned collection.
+**Connect** (`/connect`) logs into your BGG account (session token only, never the password, is stored) and pulls your owned collection. Sync now runs automatically once a day alongside the auto-scan cron, not just from the manual "Sync now" button, and the page shows an Up to date/Stale badge for it the same way it does for auto-scan -- if it ever goes stale despite the daily cron running, that almost always means the BGG session itself expired and needs reconnecting. A game that drops out of your real BGG collection is marked `inCollection: false`, never deleted, so prints already saved against it aren't lost; you can also flip that manually from a game's own page ("Remove from collection" / "Add back to collection"), which is undoable from the toast that follows.
 
 BGG's community-maintained [3D Prints for Board Games GeekList](https://boardgamegeek.com/geeklist/186909/3d-prints-for-board-games) looked like a great way to seed a starting catalog, but BGG blocks API access to its GeekList endpoint entirely, even for a real logged-in browser session, so that idea didn't survive contact with the actual API. It's still linked from each game's page as a manual-browse option.
 
@@ -25,7 +25,9 @@ BGG's community-maintained [3D Prints for Board Games GeekList](https://boardgam
 
 **Games** (`/games`) sorts your collection by print coverage first, so the games with zero saved prints surface at the top instead of getting lost in an alphabetical list.
 
-A saved print's status (Saved / Queued to Print / Printed / In the Box) can be changed inline from its card or spreadsheet row, without opening the full edit dialog -- the one field you're likely to touch every time you finish a print. Your own 1-5 usefulness rating and free-text tags live in the edit dialog and show up on the card and in the spreadsheet view once set.
+A saved print's status (Saved / Queued to Print / Printed / In the Box) can be changed inline from its card or spreadsheet row, without opening the full edit dialog -- the one field you're likely to touch every time you finish a print. Your own 1-5 usefulness rating and free-text tags live in the edit dialog and show up on the card and in the spreadsheet view once set. "Remove from catalog" deletes immediately rather than confirming first, but the toast that follows has an Undo for a few seconds after (it recreates the row rather than a true undo, so it gets a new id, but every other field carries over). "Export" downloads everything as a CSV.
+
+Pasting a link that's already saved doesn't just reject with an error -- it attaches the existing product to whichever of the games you picked aren't linked to it yet, since one print (a generic dice tower, say) can fit several games and shouldn't need a separate row per game.
 
 ## Data model
 

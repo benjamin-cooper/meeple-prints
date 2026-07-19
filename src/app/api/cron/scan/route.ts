@@ -8,7 +8,8 @@
  * proxy.ts (it has no browser session to check), so this bearer check is
  * its only protection.
  */
-import { scanNextBatch } from "@/lib/scan";
+import { scanNextBatch, DEFAULT_BATCH_TIME_BUDGET_MS } from "@/lib/scan";
+import { syncBggCollection } from "@/lib/collection-sync";
 import { prisma } from "@/lib/prisma";
 import type { NextRequest } from "next/server";
 
@@ -21,8 +22,16 @@ export async function GET(request: NextRequest) {
     return Response.json({ error: "Unauthorized." }, { status: 401 });
   }
 
+  // Collection sync used to be manual-only, so it's easy to forget and the
+  // catalog quietly goes stale. It now runs here too, sharing this route's
+  // 60s ceiling with the scan batch below -- a sync hiccup shouldn't block
+  // scanning, so it's best-effort and time-boxed on its own.
+  const cronStart = Date.now();
+  await syncBggCollection().catch(() => null);
+  const remainingBudget = Math.max(5_000, DEFAULT_BATCH_TIME_BUDGET_MS - (Date.now() - cronStart));
+
   const limit = parseInt(process.env.AUTO_SCAN_BATCH_SIZE ?? "10") || 10;
-  const result = await scanNextBatch(limit);
+  const result = await scanNextBatch(limit, remainingBudget);
 
   // Only the real scheduled cron sets this -- not the manual "Scan now"
   // button or a one-off script -- so it reflects whether Vercel's

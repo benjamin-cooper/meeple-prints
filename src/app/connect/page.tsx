@@ -170,19 +170,36 @@ export default function ConnectPage() {
         </div>
       )}
 
-      {settings.connected && (
-        <div className="rounded-lg border border-border bg-card p-4 space-y-2">
-          <div className="flex items-center justify-between">
-            <div>
+      {settings.connected && now !== null && (() => {
+        const isStale = !settings.lastCollectionSync
+          || now - new Date(settings.lastCollectionSync).getTime() > CRON_STALE_AFTER_MS;
+        return (
+          <div className="rounded-lg border border-border bg-card p-4 space-y-2">
+            <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-semibold">Your collection</p>
-              <p className="text-xs text-muted-foreground">Last synced: {formatDate(settings.lastCollectionSync)}</p>
+              <span className={cn(
+                "inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full",
+                isStale ? "bg-destructive/10 text-destructive" : "bg-status-printed/15 text-status-printed"
+              )}>
+                {isStale ? <X className="size-3" /> : <Check className="size-3" />}
+                {isStale ? "Stale" : "Up to date"}
+              </span>
             </div>
-            <Button variant="secondary" onClick={handleSyncCollection} disabled={syncingCollection}>
-              {syncingCollection ? "Syncing…" : "Sync now"}
-            </Button>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">Last synced: {formatDate(settings.lastCollectionSync)}</p>
+              <Button variant="secondary" size="sm" onClick={handleSyncCollection} disabled={syncingCollection}>
+                {syncingCollection ? "Syncing…" : "Sync now"}
+              </Button>
+            </div>
+            {isStale && (
+              <p className="text-xs text-muted-foreground">
+                Synced automatically once a day alongside the auto-scan below, so this should rarely go stale
+                on its own -- if it does, it likely means your BGG session expired. Reconnecting above will fix it.
+              </p>
+            )}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {settings.connected && now !== null && (() => {
         const isStale = !settings.lastCronRunAt

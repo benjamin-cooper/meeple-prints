@@ -63,14 +63,33 @@ async function scanOne(game: { id: number; name: string }): Promise<number> {
 
 // Cron and manual scan routes both cap the request at maxDuration = 60s. A
 // single game can take up to ~10s (every provider's own fetch timeout, run
-// in parallel) plus the 400ms courtesy delay, so a full batch of 10 could
-// exceed 60s and get killed mid-run. Stop starting new games once the
-// remaining time no longer comfortably fits a worst-case game so the
-// function always returns cleanly; games ordered by lastScannedAt asc means
-// anything skipped this run is simply first in line next time.
-const BATCH_TIME_BUDGET_MS = 45_000;
+// in parallel) plus the 400ms courtesy delay, so an uncapped batch could
+// exceed 60s and get killed mid-run. Stop starting new games once the given
+// budget no longer comfortably fits a worst-case game so the caller always
+// returns cleanly; games ordered by lastScannedAt asc (both callers below)
+// means anything skipped this way is simply first in line next time.
+export const DEFAULT_BATCH_TIME_BUDGET_MS = 45_000;
 
-export async function scanNextBatch(limit: number): Promise<{ scanned: number; newPrints: number }> {
+async function scanGamesWithBudget(
+  games: { id: number; name: string }[],
+  budgetMs: number
+): Promise<{ scanned: number; newPrints: number }> {
+  const start = Date.now();
+  let scanned = 0;
+  let newPrints = 0;
+  for (const game of games) {
+    if (Date.now() - start > budgetMs) break;
+    newPrints += await scanOne(game);
+    scanned++;
+    await new Promise((r) => setTimeout(r, 400));
+  }
+  return { scanned, newPrints };
+}
+
+export async function scanNextBatch(
+  limit: number,
+  budgetMs: number = DEFAULT_BATCH_TIME_BUDGET_MS
+): Promise<{ scanned: number; newPrints: number }> {
   // SQLite orders NULL as smallest, so never-scanned games naturally sort first.
   const games = await prisma.game.findMany({
     where: { inCollection: true },
@@ -78,18 +97,11 @@ export async function scanNextBatch(limit: number): Promise<{ scanned: number; n
     take: limit,
   });
 
-  const start = Date.now();
-  let scanned = 0;
-  let newPrints = 0;
-  for (const game of games) {
-    if (Date.now() - start > BATCH_TIME_BUDGET_MS) break;
-    newPrints += await scanOne(game);
-    scanned++;
-    await new Promise((r) => setTimeout(r, 400));
-  }
-
-  return { scanned, newPrints };
+  return scanGamesWithBudget(games, budgetMs);
 }
+
+/** Exported for the BGG collection sync's own "scan newly added games" step. */
+export { scanGamesWithBudget };
 
 /** Sweeps every in-collection game once, regardless of batch-size caps. For the one-off full-scan script. */
 export async function scanAll(

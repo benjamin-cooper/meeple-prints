@@ -31,6 +31,7 @@ interface FilterState {
   domainFilter: string;
   statusFilter: string;
   freeOnly: boolean;
+  savedOnly: boolean;
   query: string;
 }
 
@@ -52,6 +53,7 @@ function matchesFilters(item: CatalogItem, f: FilterState, exclude?: FilterKey):
   if (exclude !== "domainFilter" && f.domainFilter !== "all" && item.domain !== f.domainFilter) return false;
   if (exclude !== "statusFilter" && f.statusFilter !== "all" && (item.kind !== "saved" || item.status !== f.statusFilter)) return false;
   if (exclude !== "freeOnly" && f.freeOnly && !item.isFree) return false;
+  if (exclude !== "savedOnly" && f.savedOnly && item.kind !== "saved") return false;
   if (exclude !== "query" && f.query.trim()) {
     const q = f.query.trim().toLowerCase();
     const notes = item.kind === "saved" ? item.notes ?? "" : "";
@@ -73,6 +75,7 @@ export default function CatalogPage() {
   const [domainFilter, setDomainFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [freeOnly, setFreeOnly] = useState(false);
+  const [savedOnly, setSavedOnly] = useState(false);
   const [sort, setSort] = useState<SortMode>("title");
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -86,7 +89,7 @@ export default function CatalogPage() {
     loadGames();
   }, []);
 
-  const filterState: FilterState = { gameFilter, typeFilter, domainFilter, statusFilter, freeOnly, query };
+  const filterState: FilterState = { gameFilter, typeFilter, domainFilter, statusFilter, freeOnly, savedOnly, query };
 
   // Each facet's option list is computed from whatever still matches every
   // OTHER active filter, so picking a game hides types/sources/statuses
@@ -100,7 +103,7 @@ export default function CatalogPage() {
     });
     return set;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items, typeFilter, domainFilter, statusFilter, freeOnly, query]);
+  }, [items, typeFilter, domainFilter, statusFilter, freeOnly, savedOnly, query]);
 
   const availableTypes = useMemo(() => {
     const set = new Set<string>();
@@ -109,7 +112,7 @@ export default function CatalogPage() {
     });
     return set;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items, gameFilter, domainFilter, statusFilter, freeOnly, query]);
+  }, [items, gameFilter, domainFilter, statusFilter, freeOnly, savedOnly, query]);
 
   const availableDomains = useMemo(() => {
     const set = new Set<string>();
@@ -118,7 +121,7 @@ export default function CatalogPage() {
     });
     return set;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items, gameFilter, typeFilter, statusFilter, freeOnly, query]);
+  }, [items, gameFilter, typeFilter, statusFilter, freeOnly, savedOnly, query]);
 
   const availableStatuses = useMemo(() => {
     const set = new Set<string>();
@@ -127,7 +130,7 @@ export default function CatalogPage() {
     });
     return set;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items, gameFilter, typeFilter, domainFilter, freeOnly, query]);
+  }, [items, gameFilter, typeFilter, domainFilter, freeOnly, savedOnly, query]);
 
   const visibleGames = useMemo(
     () => games.filter((g) => availableGameIds.has(String(g.id)) || String(g.id) === gameFilter),
@@ -183,13 +186,13 @@ export default function CatalogPage() {
 
     return list;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items, query, gameFilter, typeFilter, domainFilter, statusFilter, freeOnly, sort]);
+  }, [items, query, gameFilter, typeFilter, domainFilter, statusFilter, freeOnly, savedOnly, sort]);
 
   const savedFiltered = useMemo(() => filtered.filter((i) => i.kind === "saved"), [filtered]);
 
   const hasActiveFilters =
     query.trim() !== "" || gameFilter !== "all" || typeFilter !== "all" ||
-    domainFilter !== "all" || statusFilter !== "all" || freeOnly;
+    domainFilter !== "all" || statusFilter !== "all" || freeOnly || savedOnly;
 
   const clearFilters = () => {
     setQuery("");
@@ -198,6 +201,7 @@ export default function CatalogPage() {
     setDomainFilter("all");
     setStatusFilter("all");
     setFreeOnly(false);
+    setSavedOnly(false);
   };
 
   const openAdd = () => { setEditing(null); setDialogOpen(true); };
@@ -310,6 +314,16 @@ export default function CatalogPage() {
             )}
           >
             Free Only
+          </button>
+
+          <button
+            onClick={() => setSavedOnly((s) => !s)}
+            className={cn(
+              "text-sm px-3 h-8 rounded-lg border transition-colors",
+              savedOnly ? "bg-primary text-primary-foreground border-primary" : "border-input text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Saved Only
           </button>
 
           <Select items={sortItems} value={sort} onValueChange={(v) => setSort(v as SortMode)}>

@@ -4,7 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
-import { LogOut, LogIn, Sun, Moon } from "lucide-react";
+import { LogOut, LogIn, Sun, Moon, Menu } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
 const LINKS = [
@@ -48,7 +51,7 @@ export function Nav() {
             Meeple<span className="text-primary">Prints</span>
           </span>
         </Link>
-        <nav className="flex items-center gap-1">
+        <nav className="hidden sm:flex items-center gap-1">
           {LINKS.map((link) => {
             const active = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
             return (
@@ -93,6 +96,46 @@ export function Nav() {
             </button>
           )}
         </nav>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            className="sm:hidden p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary"
+            aria-label="Open menu"
+          >
+            <Menu className="size-5" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            {LINKS.map((link) => {
+              const active = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
+              return (
+                <DropdownMenuItem
+                  key={link.href}
+                  render={<Link href={link.href} />}
+                  className={active ? "bg-accent text-accent-foreground" : undefined}
+                >
+                  {link.label}
+                </DropdownMenuItem>
+              );
+            })}
+            <DropdownMenuSeparator />
+            {mounted && (
+              <DropdownMenuItem onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}>
+                {resolvedTheme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+                {resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
+              </DropdownMenuItem>
+            )}
+            {signedIn === false && (
+              <DropdownMenuItem render={<Link href="/login" />}>
+                <LogIn className="size-4" /> Sign in
+              </DropdownMenuItem>
+            )}
+            {signedIn === true && (
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="size-4" /> Log out
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );

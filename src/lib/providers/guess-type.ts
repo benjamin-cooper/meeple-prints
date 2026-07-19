@@ -9,7 +9,7 @@ const RULES: Array<{ type: string; pattern: RegExp }> = [
   { type: "tuckbox", pattern: /tuck\s*box|card\s*box/i },
   { type: "card-holder", pattern: /card\s*(holder|stand|tray)/i },
   { type: "tracker", pattern: /\btracker\b|\bdashboard\b|score\s*wheel/i },
-  { type: "insert", pattern: /\binsert\b|organi[sz]er/i },
+  { type: "insert", pattern: /\binsert\b|\binlay\b|organi[sz]er/i },
   { type: "tokens", pattern: /\bcoins?\b|\btokens?\b|\bmeeples?\b|\bresources?\b/i },
   { type: "terrain", pattern: /\bterrain\b/i },
   { type: "miniature", pattern: /\bminiatures?\b|\bminis?\b|\bproxy\b|\bproxies\b/i },

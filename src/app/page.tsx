@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Search, Plus, LayoutGrid, Rows3, RefreshCw, X } from "lucide-react";
+import { Search, Plus, LayoutGrid, Rows3, RefreshCw, X, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -305,6 +305,14 @@ export default function CatalogPage() {
           </p>
         </div>
         <div className="flex gap-2 shrink-0">
+          <Button
+            variant="outline"
+            className="gap-1.5"
+            nativeButton={false}
+            render={<a href="/api/products/export" download />}
+          >
+            <Download className="size-4" /> Export
+          </Button>
           <Button variant="secondary" onClick={handleScanNow} disabled={scanning} className="gap-1.5">
             <RefreshCw className={cn("size-4", scanning && "animate-spin")} /> {scanning ? "Scanning…" : "Scan now"}
           </Button>

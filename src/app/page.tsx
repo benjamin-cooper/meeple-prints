@@ -215,6 +215,8 @@ export default function CatalogPage() {
   };
   const removeLocal = (id: number) =>
     setItems((prev) => prev?.filter((i) => !(i.kind === "saved" && i.id === id)) ?? prev);
+  const hideDiscovered = (id: number) =>
+    setItems((prev) => prev?.filter((i) => !(i.kind === "discovered" && i.id === id)) ?? prev);
 
   const handleScanNow = async () => {
     setScanning(true);
@@ -379,7 +381,7 @@ export default function CatalogPage() {
             item.kind === "saved" ? (
               <ProductCard key={`p-${item.id}`} product={item} onClick={() => openEdit(item)} />
             ) : (
-              <DiscoveredPrintCard key={`d-${item.id}`} item={item} onSaved={upsertLocal} />
+              <DiscoveredPrintCard key={`d-${item.id}`} item={item} onSaved={upsertLocal} onHidden={hideDiscovered} />
             )
           )}
         </div>

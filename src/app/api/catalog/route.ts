@@ -13,6 +13,7 @@ export async function GET() {
       include: { games: { select: { id: true, name: true, thumbnail: true, bggId: true } } },
     }),
     prisma.discoveredPrint.findMany({
+      where: { hidden: false },
       orderBy: { firstSeenAt: "desc" },
       include: { game: { select: { id: true, name: true, thumbnail: true, bggId: true } } },
     }),

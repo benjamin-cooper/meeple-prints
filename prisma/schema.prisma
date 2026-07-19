@@ -77,6 +77,7 @@ model DiscoveredPrint {
   rating       Float?
   ratingCount  Int?
   likesCount   Int?
+  hidden       Boolean  @default(false) // dismissed as "not relevant" -- scans never reset this back to false
   firstSeenAt  DateTime @default(now())
   lastSeenAt   DateTime @updatedAt
 

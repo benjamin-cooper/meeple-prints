@@ -46,10 +46,7 @@ type FilterKey = keyof FilterState;
 function matchesFilters(item: CatalogItem, f: FilterState, exclude?: FilterKey): boolean {
   const itemGameList = itemGames(item);
   if (exclude !== "gameFilter" && f.gameFilter !== "all" && !itemGameList.some((g) => String(g.id) === f.gameFilter)) return false;
-  if (exclude !== "typeFilter") {
-    if (f.typeFilter === "all" && item.type === "other") return false;
-    if (f.typeFilter !== "all" && item.type !== f.typeFilter) return false;
-  }
+  if (exclude !== "typeFilter" && f.typeFilter !== "all" && item.type !== f.typeFilter) return false;
   if (exclude !== "domainFilter" && f.domainFilter !== "all" && item.domain !== f.domainFilter) return false;
   if (exclude !== "statusFilter" && f.statusFilter !== "all" && (item.kind !== "saved" || item.status !== f.statusFilter)) return false;
   if (exclude !== "freeOnly" && f.freeOnly && !item.isFree) return false;

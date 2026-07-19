@@ -25,9 +25,27 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Attach at least one game." }, { status: 400 });
   }
 
-  const existing = await prisma.product.findUnique({ where: { url } });
+  // A print that fits several games (a generic dice tower, say) doesn't
+  // need a separate row per game -- if the URL's already saved, attach it
+  // to whichever of the requested games aren't linked yet instead of just
+  // rejecting the paste. Doesn't touch any of the existing product's other
+  // fields (title, notes, rating, ...), only its game links.
+  const existing = await prisma.product.findUnique({
+    where: { url },
+    include: { games: { select: { id: true, name: true, thumbnail: true, bggId: true } } },
+  });
   if (existing) {
-    return Response.json({ error: "That link is already saved." }, { status: 409 });
+    const existingGameIds = new Set(existing.games.map((g) => g.id));
+    const newGameIds = gameIds.filter((id: number) => !existingGameIds.has(id));
+    if (newGameIds.length === 0) {
+      return Response.json({ ...existing, linkedNewGames: 0 });
+    }
+    const updated = await prisma.product.update({
+      where: { id: existing.id },
+      data: { games: { connect: newGameIds.map((id: number) => ({ id })) } },
+      include: { games: { select: { id: true, name: true, thumbnail: true, bggId: true } } },
+    });
+    return Response.json({ ...updated, linkedNewGames: newGameIds.length });
   }
 
   try {

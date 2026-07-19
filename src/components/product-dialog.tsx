@@ -159,10 +159,18 @@ function ProductForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Couldn't save that.");
+      const data: Product & { linkedNewGames?: number } = await res.json();
+      if (!res.ok) throw new Error((data as unknown as { error?: string }).error ?? "Couldn't save that.");
 
-      toast.success(isEdit ? "Saved." : "Added to your catalog.");
+      if (!isEdit && data.linkedNewGames !== undefined) {
+        toast.success(
+          data.linkedNewGames > 0
+            ? `Already saved -- linked to ${data.linkedNewGames} more game${data.linkedNewGames === 1 ? "" : "s"}.`
+            : "Already saved for this game."
+        );
+      } else {
+        toast.success(isEdit ? "Saved." : "Added to your catalog.");
+      }
       onSaved(data);
       onOpenChange(false);
     } catch (err) {
@@ -174,14 +182,56 @@ function ProductForm({
 
   const handleDelete = async () => {
     if (!product) return;
-    if (!window.confirm(`Remove "${product.title}" from your catalog?`)) return;
     setDeleting(true);
     try {
       const res = await fetch(`/api/products/${product.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Couldn't remove that.");
-      toast.success("Removed.");
       onDeleted?.(product.id);
       onOpenChange(false);
+      // Recreates it as a new row (new id, but every other field carried
+      // over) rather than a true undo, since the delete already happened --
+      // no separate confirm step, just a window to back out of it.
+      toast.success("Removed.", {
+        duration: 8000,
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            try {
+              const restoreRes = await fetch("/api/products", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  url: product.url,
+                  title: product.title,
+                  description: product.description,
+                  thumbnailUrl: product.thumbnailUrl,
+                  domain: product.domain,
+                  siteName: product.siteName,
+                  type: product.type,
+                  creator: product.creator,
+                  price: product.price,
+                  currency: product.currency,
+                  isFree: product.isFree,
+                  status: product.status,
+                  rating: product.rating,
+                  siteRating: product.siteRating,
+                  siteRatingCount: product.siteRatingCount,
+                  siteLikesCount: product.siteLikesCount,
+                  notes: product.notes,
+                  tags: product.tags ? JSON.parse(product.tags) : null,
+                  gameIds: product.games.map((g) => g.id),
+                }),
+              });
+              const restored = await restoreRes.json();
+              if (!restoreRes.ok) throw new Error(restored.error ?? "Couldn't restore that.");
+              onSaved(restored);
+              toast.success("Restored.");
+            } catch (err) {
+              toast.error(err instanceof Error ? err.message : "Couldn't restore that.");
+            }
+          },
+        },
+      });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Couldn't remove that.");
     } finally {

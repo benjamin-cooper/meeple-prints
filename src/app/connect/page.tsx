@@ -7,16 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { cn, timeAgo } from "@/lib/utils";
 
 interface Settings {
   connected: boolean;
   bggUsername: string | null;
   lastCollectionSync: string | null;
+  lastCronRunAt: string | null;
   hasThingiverseToken: boolean;
   hasCultsCredentials: boolean;
   hasEtsyApiKey: boolean;
 }
+
+const CRON_STALE_AFTER_MS = 30 * 60 * 60 * 1000; // 30h -- a day plus a buffer for a slow run
 
 interface ProviderEnvStatus {
   label: string;
@@ -32,6 +35,7 @@ function formatDate(iso: string | null) {
 
 export default function ConnectPage() {
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [now, setNow] = useState<number | null>(null);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loggingIn, setLoggingIn] = useState(false);
@@ -41,6 +45,9 @@ export default function ConnectPage() {
   const refresh = () => fetch("/api/settings").then((r) => r.json()).then(setSettings);
 
   useEffect(() => { refresh(); }, []);
+  // Date.now() can't be called during render (impure); read it once after mount instead.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => setNow(Date.now()), []);
 
   const handleLogin = async () => {
     if (!username.trim() || !password) { toast.error("Enter your BGG username and password."); return; }
@@ -176,6 +183,32 @@ export default function ConnectPage() {
           </div>
         </div>
       )}
+
+      {settings.connected && now !== null && (() => {
+        const isStale = !settings.lastCronRunAt
+          || now - new Date(settings.lastCronRunAt).getTime() > CRON_STALE_AFTER_MS;
+        return (
+          <div className="rounded-lg border border-border bg-card p-4 space-y-1">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-semibold">Auto-scan</p>
+              <span className={cn(
+                "inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full",
+                isStale ? "bg-destructive/10 text-destructive" : "bg-status-printed/15 text-status-printed"
+              )}>
+                {isStale ? <X className="size-3" /> : <Check className="size-3" />}
+                {isStale ? "Not running" : "Running"}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">Last daily sweep: {timeAgo(settings.lastCronRunAt, now)}</p>
+            {isStale && (
+              <p className="text-xs text-muted-foreground">
+                Expected once a day. Check that <code className="font-mono">CRON_SECRET</code> is set in your
+                hosting provider&apos;s environment variables and that the cron job is enabled.
+              </p>
+            )}
+          </div>
+        );
+      })()}
 
       <div className="space-y-3">
         <div>

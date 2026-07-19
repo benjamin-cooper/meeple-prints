@@ -53,6 +53,7 @@ export interface DiscoveredPrint {
   ratingCount: number | null;
   likesCount: number | null;
   createdAt: string;
+  lastSeenAt: string;
   game: GameSummary;
 }
 

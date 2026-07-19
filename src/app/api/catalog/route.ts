@@ -7,7 +7,7 @@
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
-  const [products, discovered] = await Promise.all([
+  const [products, discovered, hiddenCount] = await Promise.all([
     prisma.product.findMany({
       orderBy: { createdAt: "desc" },
       include: { games: { select: { id: true, name: true, thumbnail: true, bggId: true } } },
@@ -17,6 +17,7 @@ export async function GET() {
       orderBy: { firstSeenAt: "desc" },
       include: { game: { select: { id: true, name: true, thumbnail: true, bggId: true } } },
     }),
+    prisma.discoveredPrint.count({ where: { hidden: true } }),
   ]);
 
   const savedUrls = new Set(products.map((p) => p.url));
@@ -40,9 +41,10 @@ export async function GET() {
       ratingCount: d.ratingCount,
       likesCount: d.likesCount,
       createdAt: d.firstSeenAt,
+      lastSeenAt: d.lastSeenAt,
       game: d.game,
       kind: "discovered" as const,
     }));
 
-  return Response.json([...saved, ...notYetSaved]);
+  return Response.json({ items: [...saved, ...notYetSaved], hiddenCount });
 }

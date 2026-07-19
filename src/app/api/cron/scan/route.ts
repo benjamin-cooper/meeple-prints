@@ -8,6 +8,7 @@
  * in proxy.ts, so this bearer check is this route's only protection.
  */
 import { scanNextBatch } from "@/lib/scan";
+import { prisma } from "@/lib/prisma";
 import type { NextRequest } from "next/server";
 
 export const maxDuration = 60;
@@ -21,6 +22,15 @@ export async function GET(request: NextRequest) {
 
   const limit = parseInt(process.env.AUTO_SCAN_BATCH_SIZE ?? "10") || 10;
   const result = await scanNextBatch(limit);
+
+  // Only the real scheduled cron sets this -- not the manual "Scan now"
+  // button or a one-off script -- so it reflects whether Vercel's
+  // scheduler is actually still firing, not just whether scanning happened.
+  await prisma.settings.upsert({
+    where: { id: "singleton" },
+    update: { lastCronRunAt: new Date() },
+    create: { id: "singleton", lastCronRunAt: new Date() },
+  });
 
   return Response.json(result);
 }

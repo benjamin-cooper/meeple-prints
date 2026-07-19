@@ -7,15 +7,18 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RatingRow } from "@/components/rating-row";
 import { typeLabel } from "@/lib/constants";
+import { timeAgo } from "@/lib/utils";
 import type { DiscoveredPrint, Product } from "@/lib/types";
 
 /** A cached, not-yet-saved search hit shown in Catalog. Saving promotes it into a real Product. */
 export function DiscoveredPrintCard({
   item,
+  now,
   onSaved,
   onHidden,
 }: {
   item: DiscoveredPrint;
+  now: number | null;
   onSaved: (product: Product) => void;
   onHidden: (id: number) => void;
 }) {
@@ -115,7 +118,14 @@ export function DiscoveredPrintCard({
             {saving ? "Saving…" : "Save"}
           </Button>
         </div>
-        <span className="text-[11px] text-muted-foreground font-mono">{typeLabel(item.type)}</span>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[11px] text-muted-foreground font-mono">{typeLabel(item.type)}</span>
+          {now !== null && (
+            <span className="text-[11px] text-muted-foreground" title="Last confirmed present in a scan">
+              Seen {timeAgo(item.lastSeenAt, now)}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

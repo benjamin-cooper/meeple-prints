@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Search, Plus, LayoutGrid, Rows3, RefreshCw, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,8 @@ import { cn } from "@/lib/utils";
 type ViewMode = "marketplace" | "spreadsheet";
 type SortMode = "newest" | "title" | "price-low" | "price-high";
 type GameWithScan = Game & { lastScannedAt: string | null };
+
+const PAGE_SIZE = 60;
 
 function itemGames(item: CatalogItem): GameSummary[] {
   return item.kind === "saved" ? item.games : [item.game];
@@ -62,9 +65,13 @@ function matchesFilters(item: CatalogItem, f: FilterState, exclude?: FilterKey):
 
 export default function CatalogPage() {
   const [items, setItems] = useState<CatalogItem[] | null>(null);
+  const [hiddenCount, setHiddenCount] = useState(0);
   const [games, setGames] = useState<GameWithScan[]>([]);
   const [view, setView] = useState<ViewMode>("marketplace");
   const [scanning, setScanning] = useState(false);
+  const [now, setNow] = useState<number | null>(null);
+  const [newSinceVisit, setNewSinceVisit] = useState(0);
+  const checkedNewSinceVisit = useRef(false);
 
   const [query, setQuery] = useState("");
   const [gameFilter, setGameFilter] = useState<string>("all");
@@ -78,13 +85,37 @@ export default function CatalogPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
 
-  const loadCatalog = () => fetch("/api/catalog").then((r) => r.json()).then(setItems);
+  const loadCatalog = () =>
+    fetch("/api/catalog").then((r) => r.json()).then((data) => {
+      setItems(data.items);
+      setHiddenCount(data.hiddenCount ?? 0);
+    });
   const loadGames = () => fetch("/api/games").then((r) => r.json()).then(setGames);
 
   useEffect(() => {
     loadCatalog();
     loadGames();
   }, []);
+
+  // Date.now() can't be called during render (impure); read it once after mount instead.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => setNow(Date.now()), []);
+
+  // Compares against the last visit stored in localStorage, once per page
+  // load (the ref guard keeps a later local mutation -- saving, hiding,
+  // re-scanning -- from re-triggering this and overwriting the timestamp).
+  useEffect(() => {
+    if (!items || checkedNewSinceVisit.current) return;
+    checkedNewSinceVisit.current = true;
+    const lastVisitRaw = localStorage.getItem("catalogLastVisit");
+    if (lastVisitRaw) {
+      const lastVisitMs = Number(lastVisitRaw);
+      const count = items.filter((i) => i.kind === "discovered" && new Date(i.createdAt).getTime() > lastVisitMs).length;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setNewSinceVisit(count);
+    }
+    localStorage.setItem("catalogLastVisit", String(Date.now()));
+  }, [items]);
 
   const filterState: FilterState = { gameFilter, typeFilter, domainFilter, statusFilter, freeOnly, savedOnly, query };
 
@@ -187,6 +218,14 @@ export default function CatalogPage() {
 
   const savedFiltered = useMemo(() => filtered.filter((i) => i.kind === "saved"), [filtered]);
 
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  // Resetting pagination when the result set changes underneath it is a
+  // legitimate case for syncing state to a dependency change in an effect.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => setVisibleCount(PAGE_SIZE), [filtered]);
+  const visibleItems = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
+  const hasMore = filtered.length > visibleCount;
+
   const hasActiveFilters =
     query.trim() !== "" || gameFilter !== "all" || typeFilter !== "all" ||
     domainFilter !== "all" || statusFilter !== "all" || freeOnly || savedOnly;
@@ -243,10 +282,25 @@ export default function CatalogPage() {
     <div className="space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
         <div>
-          <h1 className="font-display font-extrabold uppercase text-3xl tracking-tight leading-none">Catalog</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="font-display font-extrabold uppercase text-3xl tracking-tight leading-none">Catalog</h1>
+            {newSinceVisit > 0 && (
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary text-primary-foreground">
+                {newSinceVisit} new
+              </span>
+            )}
+          </div>
           <p className="text-sm text-muted-foreground mt-1">
             {items === null ? "Loading…" : `${filtered.length} of ${items.length} print${items.length === 1 ? "" : "s"}`}
             {collectionGames.length > 0 && ` (${scannedCount} of ${collectionGames.length} games scanned)`}
+            {hiddenCount > 0 && (
+              <>
+                {" · "}
+                <Link href="/hidden" className="underline underline-offset-4 hover:text-foreground">
+                  {hiddenCount} hidden
+                </Link>
+              </>
+            )}
           </p>
         </div>
         <div className="flex gap-2 shrink-0">
@@ -387,15 +441,24 @@ export default function CatalogPage() {
       )}
 
       {filtered.length > 0 && view === "marketplace" && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-          {filtered.map((item) =>
-            item.kind === "saved" ? (
-              <ProductCard key={`p-${item.id}`} product={item} onClick={() => openEdit(item)} />
-            ) : (
-              <DiscoveredPrintCard key={`d-${item.id}`} item={item} onSaved={upsertLocal} onHidden={hideDiscovered} />
-            )
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            {visibleItems.map((item) =>
+              item.kind === "saved" ? (
+                <ProductCard key={`p-${item.id}`} product={item} onClick={() => openEdit(item)} />
+              ) : (
+                <DiscoveredPrintCard key={`d-${item.id}`} item={item} now={now} onSaved={upsertLocal} onHidden={hideDiscovered} />
+              )
+            )}
+          </div>
+          {hasMore && (
+            <div className="flex justify-center pt-2">
+              <Button variant="outline" onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}>
+                Load more ({filtered.length - visibleCount} remaining)
+              </Button>
+            </div>
           )}
-        </div>
+        </>
       )}
 
       {filtered.length > 0 && view === "spreadsheet" && (

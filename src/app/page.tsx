@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Search, Plus, LayoutGrid, Rows3, RefreshCw } from "lucide-react";
+import { Search, Plus, LayoutGrid, Rows3, RefreshCw, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -73,7 +73,7 @@ export default function CatalogPage() {
   const [domainFilter, setDomainFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [freeOnly, setFreeOnly] = useState(false);
-  const [sort, setSort] = useState<SortMode>("newest");
+  const [sort, setSort] = useState<SortMode>("title");
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
@@ -174,7 +174,7 @@ export default function CatalogPage() {
 
     list = [...list].sort((a, b) => {
       switch (sort) {
-        case "title": return a.title.localeCompare(b.title);
+        case "title": return a.title.trim().localeCompare(b.title.trim());
         case "price-low": return (a.isFree ? 0 : a.price ?? Infinity) - (b.isFree ? 0 : b.price ?? Infinity);
         case "price-high": return (b.isFree ? 0 : b.price ?? -Infinity) - (a.isFree ? 0 : a.price ?? -Infinity);
         default: return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -186,6 +186,19 @@ export default function CatalogPage() {
   }, [items, query, gameFilter, typeFilter, domainFilter, statusFilter, freeOnly, sort]);
 
   const savedFiltered = useMemo(() => filtered.filter((i) => i.kind === "saved"), [filtered]);
+
+  const hasActiveFilters =
+    query.trim() !== "" || gameFilter !== "all" || typeFilter !== "all" ||
+    domainFilter !== "all" || statusFilter !== "all" || freeOnly;
+
+  const clearFilters = () => {
+    setQuery("");
+    setGameFilter("all");
+    setTypeFilter("all");
+    setDomainFilter("all");
+    setStatusFilter("all");
+    setFreeOnly(false);
+  };
 
   const openAdd = () => { setEditing(null); setDialogOpen(true); };
   const openEdit = (p: Product) => { setEditing(p); setDialogOpen(true); };
@@ -306,6 +319,15 @@ export default function CatalogPage() {
               <SelectItem value="price-high">Price: High</SelectItem>
             </SelectContent>
           </Select>
+
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="flex items-center gap-1 text-sm px-2 h-8 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="size-3.5" /> Clear filters
+            </button>
+          )}
 
           <div className="ml-auto flex items-center gap-0.5 border border-input rounded-lg p-0.5">
             <button

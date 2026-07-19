@@ -7,6 +7,7 @@
  *   npx tsx scripts/full-scan.ts            # local dev.db (default)
  *   DATABASE_URL=... DATABASE_AUTH_TOKEN=... npx tsx scripts/full-scan.ts   # Turso prod
  */
+import "dotenv/config";
 import { scanAll } from "../src/lib/scan";
 
 async function main() {

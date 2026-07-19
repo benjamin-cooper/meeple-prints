@@ -70,7 +70,8 @@ export default function ConnectPage() {
       const res = await fetch("/api/bgg/collection/import", { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Sync failed.");
-      toast.success(`Imported ${data.imported} game${data.imported === 1 ? "" : "s"}.`);
+      const scanNote = data.newGames > 0 ? `, scanned ${data.scanned} of ${data.newGames} new game${data.newGames === 1 ? "" : "s"}` : "";
+      toast.success(`Imported ${data.imported} game${data.imported === 1 ? "" : "s"}${scanNote}.`);
       refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Sync failed.");

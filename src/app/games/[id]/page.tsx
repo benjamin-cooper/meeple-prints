@@ -126,7 +126,9 @@ export default function GameDetailPage({ params }: { params: Promise<{ id: strin
 
       {game.products.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {game.products.map((p) => <ProductCard key={p.id} product={p} onClick={() => openEdit(p)} />)}
+          {game.products.map((p) => (
+            <ProductCard key={p.id} product={p} onClick={() => openEdit(p)} onStatusChange={upsertLocal} />
+          ))}
         </div>
       )}
 

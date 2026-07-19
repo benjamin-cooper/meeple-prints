@@ -57,7 +57,8 @@ function matchesFilters(item: CatalogItem, f: FilterState, exclude?: FilterKey):
   if (exclude !== "query" && f.query.trim()) {
     const q = f.query.trim().toLowerCase();
     const notes = item.kind === "saved" ? item.notes ?? "" : "";
-    const hay = [item.title, item.creator ?? "", notes, ...itemGameList.map((g) => g.name)].join(" ").toLowerCase();
+    const tags: string[] = item.kind === "saved" && item.tags ? JSON.parse(item.tags) : [];
+    const hay = [item.title, item.creator ?? "", notes, ...tags, ...itemGameList.map((g) => g.name)].join(" ").toLowerCase();
     if (!hay.includes(q)) return false;
   }
   return true;
@@ -445,7 +446,7 @@ export default function CatalogPage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {visibleItems.map((item) =>
               item.kind === "saved" ? (
-                <ProductCard key={`p-${item.id}`} product={item} onClick={() => openEdit(item)} />
+                <ProductCard key={`p-${item.id}`} product={item} onClick={() => openEdit(item)} onStatusChange={upsertLocal} />
               ) : (
                 <DiscoveredPrintCard key={`d-${item.id}`} item={item} now={now} onSaved={upsertLocal} onHidden={hideDiscovered} />
               )
@@ -473,10 +474,13 @@ export default function CatalogPage() {
                 <th className="py-2 pr-3">Status</th>
                 <th className="py-2 pr-3">Price</th>
                 <th className="py-2 pr-3">Rating</th>
+                <th className="py-2 pr-3">Tags</th>
               </tr>
             </thead>
             <tbody>
-              {savedFiltered.map((p) => <ProductRow key={p.id} product={p} onClick={() => openEdit(p)} />)}
+              {savedFiltered.map((p) => (
+                <ProductRow key={p.id} product={p} onClick={() => openEdit(p)} onStatusChange={upsertLocal} />
+              ))}
             </tbody>
           </table>
           {savedFiltered.length === 0 && (

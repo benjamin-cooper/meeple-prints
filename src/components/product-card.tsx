@@ -1,17 +1,35 @@
 "use client";
 
 import Image from "next/image";
-import { StatusPill } from "@/components/status-pill";
+import { StatusQuickSelect } from "@/components/status-quick-select";
 import { RatingRow } from "@/components/rating-row";
+import { PersonalRating } from "@/components/personal-rating";
 import { typeLabel } from "@/lib/constants";
 import type { Product } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-export function ProductCard({ product, onClick }: { product: Product; onClick: () => void }) {
+export function ProductCard({
+  product,
+  onClick,
+  onStatusChange,
+}: {
+  product: Product;
+  onClick: () => void;
+  onStatusChange: (p: Product) => void;
+}) {
+  const tags: string[] = product.tags ? JSON.parse(product.tags) : [];
+
   return (
-    <button
+    // A div, not a button: StatusQuickSelect below needs its own interactive
+    // trigger, and a select/button can't nest inside a native <button>.
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
-      className="group text-left flex flex-col rounded-lg border border-border bg-card overflow-hidden hover:border-primary/60 hover:shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); }
+      }}
+      className="group flex flex-col rounded-lg border border-border bg-card overflow-hidden hover:border-primary/60 hover:shadow-sm transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <div className="relative aspect-[4/3] bg-muted">
         {product.thumbnailUrl ? (
@@ -28,7 +46,10 @@ export function ProductCard({ product, onClick }: { product: Product; onClick: (
 
       <div className="p-3 flex flex-col gap-1.5 flex-1">
         <p className="text-sm font-semibold leading-snug line-clamp-2">{product.title}</p>
-        <RatingRow rating={product.siteRating} ratingCount={product.siteRatingCount} likesCount={product.siteLikesCount} />
+        <div className="flex items-center gap-2">
+          <RatingRow rating={product.siteRating} ratingCount={product.siteRatingCount} likesCount={product.siteLikesCount} />
+          <PersonalRating value={product.rating} size="sm" />
+        </div>
 
         <div className="flex flex-wrap gap-1">
           {product.games.slice(0, 3).map((g) => (
@@ -41,10 +62,15 @@ export function ProductCard({ product, onClick }: { product: Product; onClick: (
               +{product.games.length - 3}
             </span>
           )}
+          {tags.map((t) => (
+            <span key={t} className="text-[11px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+              {t}
+            </span>
+          ))}
         </div>
 
         <div className="mt-auto pt-2 flex items-center justify-between gap-2">
-          <StatusPill status={product.status} />
+          <StatusQuickSelect product={product} onChanged={onStatusChange} />
           <span className={cn(
             "font-mono text-xs font-medium",
             product.isFree ? "text-status-printed" : "text-foreground"
@@ -54,6 +80,6 @@ export function ProductCard({ product, onClick }: { product: Product; onClick: (
         </div>
         <span className="text-[11px] text-muted-foreground font-mono">{typeLabel(product.type)}</span>
       </div>
-    </button>
+    </div>
   );
 }

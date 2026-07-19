@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, LogIn } from "lucide-react";
+import { useTheme } from "next-themes";
+import { LogOut, LogIn, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const LINKS = [
@@ -16,10 +17,18 @@ const LINKS = [
 export function Nav() {
   const pathname = usePathname();
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/session").then((r) => r.json()).then((d) => setSignedIn(d.signedIn));
   }, [pathname]);
+
+  // Avoids a hydration mismatch: resolvedTheme is unknown on the server, so
+  // the toggle icon can't render from it until after the client has mounted.
+  // This is next-themes' own documented pattern for exactly this case.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => setMounted(true), []);
 
   if (pathname === "/login") return null;
 
@@ -57,6 +66,15 @@ export function Nav() {
               </Link>
             );
           })}
+          {mounted && (
+            <button
+              onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+              aria-label={resolvedTheme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary ml-1"
+            >
+              {resolvedTheme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+            </button>
+          )}
           {signedIn === false && (
             <Link
               href="/login"

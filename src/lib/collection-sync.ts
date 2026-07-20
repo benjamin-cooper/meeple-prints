@@ -16,6 +16,8 @@ export interface CollectionSyncResult {
   removedFromCollection: number;
   newGames: number;
   scanned: number;
+  /** Full detail on what dropped, not just the count -- lets the manual "Sync now" flow offer a review step for permanently deleting any of them. */
+  droppedGames: { id: number; name: string; productCount: number }[];
 }
 
 /** Bounds the "scan newly added games" step regardless of caller, since the cron path has to share its 60s ceiling with the main scan batch that runs after this. */
@@ -67,10 +69,13 @@ export async function syncBggCollection(
   }
 
   const importedIds = new Set(games.map((g) => g.bggId));
-  const existing = await prisma.game.findMany({ where: { inCollection: true } });
-  const droppedIds = existing.filter((g) => !importedIds.has(g.bggId)).map((g) => g.id);
-  if (droppedIds.length) {
-    await prisma.game.updateMany({ where: { id: { in: droppedIds } }, data: { inCollection: false } });
+  const existing = await prisma.game.findMany({
+    where: { inCollection: true },
+    include: { _count: { select: { products: true } } },
+  });
+  const dropped = existing.filter((g) => !importedIds.has(g.bggId));
+  if (dropped.length) {
+    await prisma.game.updateMany({ where: { id: { in: dropped.map((g) => g.id) } }, data: { inCollection: false } });
   }
 
   // BGG appears to rotate the session cookie on use, so persist whatever
@@ -82,8 +87,9 @@ export async function syncBggCollection(
 
   return {
     imported: games.length,
-    removedFromCollection: droppedIds.length,
+    removedFromCollection: dropped.length,
     newGames: newBggIds.length,
     scanned: scannedCount,
+    droppedGames: dropped.map((g) => ({ id: g.id, name: g.name, productCount: g._count.products })),
   };
 }

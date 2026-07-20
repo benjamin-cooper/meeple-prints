@@ -6,7 +6,11 @@ import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
 import { cn, timeAgo } from "@/lib/utils";
 
 interface Settings {
@@ -17,6 +21,12 @@ interface Settings {
   hasThingiverseToken: boolean;
   hasCultsCredentials: boolean;
   hasEtsyApiKey: boolean;
+}
+
+interface DroppedGame {
+  id: number;
+  name: string;
+  productCount: number;
 }
 
 const CRON_STALE_AFTER_MS = 30 * 60 * 60 * 1000; // 30h -- a day plus a buffer for a slow run
@@ -41,6 +51,10 @@ export default function ConnectPage() {
   const [loggingIn, setLoggingIn] = useState(false);
   const [syncingCollection, setSyncingCollection] = useState(false);
   const [showReconnect, setShowReconnect] = useState(false);
+  const [droppedGames, setDroppedGames] = useState<DroppedGame[]>([]);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [selectedDropped, setSelectedDropped] = useState<Set<number>>(new Set());
+  const [deletingDropped, setDeletingDropped] = useState(false);
 
   const refresh = () => fetch("/api/settings").then((r) => r.json()).then(setSettings);
 
@@ -78,12 +92,53 @@ export default function ConnectPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Sync failed.");
       const scanNote = data.newGames > 0 ? `, scanned ${data.scanned} of ${data.newGames} new game${data.newGames === 1 ? "" : "s"}` : "";
-      toast.success(`Imported ${data.imported} game${data.imported === 1 ? "" : "s"}${scanNote}.`);
+      const dropped: DroppedGame[] = data.droppedGames ?? [];
+      toast.success(`Imported ${data.imported} game${data.imported === 1 ? "" : "s"}${scanNote}.`, dropped.length > 0 ? {
+        action: {
+          label: `Review ${dropped.length} removed`,
+          onClick: () => {
+            setDroppedGames(dropped);
+            setSelectedDropped(new Set());
+            setReviewOpen(true);
+          },
+        },
+      } : undefined);
       refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Sync failed.");
     } finally {
       setSyncingCollection(false);
+    }
+  };
+
+  const toggleDropped = (id: number) => {
+    setSelectedDropped((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const handleDeleteSelectedDropped = async () => {
+    const ids = Array.from(selectedDropped);
+    if (ids.length === 0) return;
+    setDeletingDropped(true);
+    try {
+      const results = await Promise.allSettled(
+        ids.map((id) => fetch(`/api/games/${id}`, { method: "DELETE" }).then((r) => {
+          if (!r.ok) throw new Error();
+          return id;
+        }))
+      );
+      const succeeded = new Set(
+        results.filter((r): r is PromiseFulfilledResult<number> => r.status === "fulfilled").map((r) => r.value)
+      );
+      setDroppedGames((prev) => prev.filter((g) => !succeeded.has(g.id)));
+      setSelectedDropped(new Set());
+      toast.success(`Deleted ${succeeded.size} game${succeeded.size === 1 ? "" : "s"} permanently.`);
+      if (succeeded.size === ids.length) setReviewOpen(false);
+    } finally {
+      setDeletingDropped(false);
     }
   };
 
@@ -255,6 +310,43 @@ export default function ConnectPage() {
           ))}
         </div>
       </div>
+
+      <Dialog open={reviewOpen} onOpenChange={setReviewOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Removed from your BGG collection</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              These are kept, not deleted, by default -- any prints saved against them stay safe. Check any you
+              want gone permanently, prints and all.
+            </p>
+            <div className="border border-border rounded-lg divide-y divide-border max-h-64 overflow-y-auto">
+              {droppedGames.map((g) => (
+                <label key={g.id} className="flex items-center gap-2.5 px-3 py-2 cursor-pointer hover:bg-secondary text-sm">
+                  <Checkbox checked={selectedDropped.has(g.id)} onCheckedChange={() => toggleDropped(g.id)} />
+                  <span className="flex-1 truncate">{g.name}</span>
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    {g.productCount} print{g.productCount === 1 ? "" : "s"}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReviewOpen(false)}>
+              {selectedDropped.size > 0 ? "Keep the rest" : "Close"}
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={selectedDropped.size === 0 || deletingDropped}
+              onClick={handleDeleteSelectedDropped}
+            >
+              {deletingDropped ? "Deleting…" : `Delete ${selectedDropped.size || ""} permanently`.trim()}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

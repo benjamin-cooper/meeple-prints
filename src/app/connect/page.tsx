@@ -21,6 +21,7 @@ interface Settings {
   hasThingiverseToken: boolean;
   hasCultsCredentials: boolean;
   hasEtsyApiKey: boolean;
+  hasMyMiniFactoryApiKey: boolean;
 }
 
 interface DroppedGame {
@@ -187,6 +188,20 @@ export default function ConnectPage() {
           </a>{" "}
           (approval usually takes a day or two) and set its Keystring as <code className="font-mono">ETSY_KEYSTRING</code>{" "}
           and Shared Secret as <code className="font-mono">ETSY_SHARED_SECRET</code>.
+        </>
+      ),
+    },
+    {
+      label: "MyMiniFactory",
+      configured: settings.hasMyMiniFactoryApiKey,
+      envVars: "MYMINIFACTORY_API_KEY",
+      instructions: (
+        <>
+          Create a free app at{" "}
+          <a href="https://www.myminifactory.com/settings/developer/application" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
+            myminifactory.com/settings/developer/application
+          </a>{" "}
+          and set its API key as <code className="font-mono">MYMINIFACTORY_API_KEY</code>.
         </>
       ),
     },

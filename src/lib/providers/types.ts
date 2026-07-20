@@ -4,6 +4,7 @@ export interface ProviderCredentials {
   cultsApiKey: string | null;
   etsyKeystring: string | null;
   etsySharedSecret: string | null;
+  myminifactoryApiKey: string | null;
 }
 
 export interface ProviderResult {

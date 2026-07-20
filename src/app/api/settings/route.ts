@@ -13,5 +13,6 @@ export async function GET() {
     hasThingiverseToken: !!creds.thingiverseToken,
     hasCultsCredentials: !!creds.cultsUsername && !!creds.cultsApiKey,
     hasEtsyApiKey: !!creds.etsyKeystring && !!creds.etsySharedSecret,
+    hasMyMiniFactoryApiKey: !!creds.myminifactoryApiKey,
   });
 }

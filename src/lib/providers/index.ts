@@ -2,6 +2,7 @@ import { printablesProvider } from "./printables";
 import { thingiverseProvider } from "./thingiverse";
 import { cults3dProvider } from "./cults3d";
 import { etsyProvider } from "./etsy";
+import { myminifactoryProvider } from "./myminifactory";
 import { isRelevant } from "./relevance";
 import { findDuplicateIndices } from "./dedupe";
 import type { ProviderCredentials, ProviderOutcome, SearchProvider } from "./types";
@@ -14,6 +15,7 @@ export const SEARCH_PROVIDERS: SearchProvider[] = [
   thingiverseProvider,
   cults3dProvider,
   etsyProvider,
+  myminifactoryProvider,
 ];
 
 export async function searchAllProviders(

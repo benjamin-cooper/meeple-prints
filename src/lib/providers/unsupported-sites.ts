@@ -5,5 +5,4 @@
  */
 export const UNSUPPORTED_SITES: Array<{ label: string; reason: string }> = [
   { label: "MakerWorld", reason: "Its search API rejects requests that don't come from a browser session." },
-  { label: "MyMiniFactory", reason: "Its API requires a full OAuth login, not just an API key." },
 ];

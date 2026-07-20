@@ -207,7 +207,7 @@ export default function GameDetailPage({ params }: { params: Promise<{ id: strin
         )}
 
         <p className="text-xs text-muted-foreground">
-          MakerWorld and MyMiniFactory can&apos;t be searched automatically, so browse them directly instead:
+          MakerWorld can&apos;t be searched automatically, so browse it directly instead:
         </p>
         <div className="flex flex-wrap gap-2">
           {searchLinksForGame(game.name).map((s) => (

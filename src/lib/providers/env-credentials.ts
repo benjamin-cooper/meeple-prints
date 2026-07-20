@@ -8,5 +8,6 @@ export function getProviderCredentials(): ProviderCredentials {
     cultsApiKey: process.env.CULTS_API_KEY || null,
     etsyKeystring: process.env.ETSY_KEYSTRING || null,
     etsySharedSecret: process.env.ETSY_SHARED_SECRET || null,
+    myminifactoryApiKey: process.env.MYMINIFACTORY_API_KEY || null,
   };
 }

@@ -42,8 +42,8 @@ export default function PublicSearchPage() {
       <div>
         <h1 className="font-display font-extrabold uppercase text-3xl tracking-tight leading-none">Search</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Look up 3D-printable board game accessories across Printables, Thingiverse, Cults3D, and Etsy.
-          No account needed.
+          Look up 3D-printable board game accessories across Printables, Thingiverse, Cults3D, Etsy,
+          and MyMiniFactory. No account needed.
         </p>
       </div>
 

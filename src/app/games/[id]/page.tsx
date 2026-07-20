@@ -1,12 +1,17 @@
 "use client";
 
 import { use, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Plus, ExternalLink, Search, FolderMinus, FolderPlus } from "lucide-react";
+import { Plus, ExternalLink, Search, FolderMinus, FolderPlus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
 import { ProductCard } from "@/components/product-card";
 import { ProductDialog } from "@/components/product-dialog";
 import { SearchResultsAggregator } from "@/components/search-results-aggregator";
@@ -24,12 +29,16 @@ interface GameDetail extends Game {
 
 export default function GameDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
   const [game, setGame] = useState<GameDetail | null>(null);
   const [games, setGames] = useState<GameSummary[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [outcomes, setOutcomes] = useState<AnnotatedOutcome[] | null>(null);
   const [searching, setSearching] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -96,6 +105,20 @@ export default function GameDetailPage({ params }: { params: Promise<{ id: strin
     });
   };
 
+  const handleDeletePermanently = async () => {
+    if (!game || deleteConfirmText !== game.name) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/games/${game.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Couldn't delete that.");
+      toast.success(`Deleted ${game.name}.`);
+      router.push("/games");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't delete that.");
+      setDeleting(false);
+    }
+  };
+
   if (!game) {
     return (
       <div className="space-y-4">
@@ -152,6 +175,13 @@ export default function GameDetailPage({ params }: { params: Promise<{ id: strin
                 <FolderPlus className="size-4" /> Add back to collection
               </Button>
             )}
+            <Button
+              variant="ghost"
+              className="gap-1.5 text-muted-foreground hover:text-destructive"
+              onClick={() => { setDeleteConfirmText(""); setDeleteDialogOpen(true); }}
+            >
+              <Trash2 className="size-4" /> Delete permanently
+            </Button>
           </div>
         </div>
       </div>
@@ -203,6 +233,48 @@ export default function GameDetailPage({ params }: { params: Promise<{ id: strin
         onSaved={upsertLocal}
         onDeleted={removeLocal}
       />
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete {game.name}?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              This is permanent, unlike removing it from your collection.{" "}
+              {game.products.length > 0 ? (
+                <>
+                  {game.products.length} print{game.products.length === 1 ? "" : "s"} saved only for this game
+                  will be deleted too. Prints also saved for another game are kept, just unlinked from this one.
+                </>
+              ) : (
+                "No prints are saved for it, so nothing else is affected."
+              )}
+            </p>
+            <div className="space-y-1.5">
+              <label htmlFor="confirm-delete-game" className="text-sm">
+                Type <span className="font-semibold">{game.name}</span> to confirm.
+              </label>
+              <Input
+                id="confirm-delete-game"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                autoComplete="off"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              disabled={deleteConfirmText !== game.name || deleting}
+              onClick={handleDeletePermanently}
+            >
+              {deleting ? "Deleting…" : "Delete permanently"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

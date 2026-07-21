@@ -59,19 +59,36 @@ function isLikely3DPrintFile(listing: EtsyListing): boolean {
 // surviving listing needs its own call to the separate images endpoint.
 // Fetched after the listing_type filter so this is at most RESULT_LIMIT
 // calls, not FETCH_LIMIT.
+//
+// A single failed attempt here (rate limit, timeout, any transient blip)
+// used to permanently cache thumbnailUrl: null -- upsert never retries on
+// its own, so it'd stay missing until that game happened to get rescanned
+// again. Confirmed live: listings showing "No image" in the UI had real,
+// fully working image data when queried directly seconds later. One retry
+// after a short delay covers the common transient case without adding much
+// latency to a search that's already making several of these calls.
+async function fetchThumbnailOnce(listingId: number, apiKey: string): Promise<string | null> {
+  const res = await fetch(`https://api.etsy.com/v3/application/listings/${listingId}/images`, {
+    headers: { "x-api-key": apiKey },
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  const image: EtsyImage | undefined = data?.results?.[0];
+  return image?.url_570xN ?? image?.url_170x135 ?? null;
+}
+
 async function fetchThumbnail(listingId: number, apiKey: string): Promise<string | null> {
-  try {
-    const res = await fetch(`https://api.etsy.com/v3/application/listings/${listingId}/images`, {
-      headers: { "x-api-key": apiKey },
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const image: EtsyImage | undefined = data?.results?.[0];
-    return image?.url_570xN ?? image?.url_170x135 ?? null;
-  } catch {
-    return null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 750));
+    try {
+      const result = await fetchThumbnailOnce(listingId, apiKey);
+      if (result) return result;
+    } catch {
+      // fall through to the retry (or give up, on the second attempt)
+    }
   }
+  return null;
 }
 
 async function search(query: string, creds: ProviderCredentials): Promise<ProviderResult[]> {

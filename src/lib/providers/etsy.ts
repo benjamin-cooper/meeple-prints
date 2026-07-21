@@ -14,6 +14,7 @@ interface EtsyListing {
   /** "physical" | "download" | "both", confirmed against a live response. */
   listing_type?: string;
   num_favorers?: number;
+  tags?: string[];
 }
 
 interface EtsyImage {
@@ -24,10 +25,31 @@ interface EtsyImage {
 // findAllListingsActive has no query param to filter by listing_type, so
 // this over-fetches and filters client-side. Etsy sells finished physical
 // products alongside digital files under the same search, and most tabletop
-// hits are the former (someone selling an already-printed insert) -- we
-// only want listings where a digital file is actually what you're buying.
-const FETCH_LIMIT = 24;
+// hits are the former (someone selling an already-printed insert) -- for a
+// query like "dice tower" only about 10% of results are "download", so a
+// small fetch mostly comes back empty after filtering. 100 is Etsy's actual
+// max for `limit` (confirmed live -- 200 errors with "Value must be <= 100"),
+// still a single request, and roughly triples the digital results found.
+const FETCH_LIMIT = 100;
 const RESULT_LIMIT = 8;
+
+// listing_type: "download" just means "buying this gets you a file," not
+// that the file is an STL -- Etsy's digital tabletop-accessory listings are
+// a mix of 3D-print files and laser-cutter/vinyl-cutter/sewing files (SVG,
+// DXF, cross-stitch, embroidery). There's no clean structured signal for
+// this: file_data on the full listing detail is a vague string like "1 TXT",
+// and getting it needs a third API call per listing on top of search and
+// images. Same category of accepted-imperfect heuristic as
+// src/lib/providers/relevance.ts: exclude on a strong title/tag signal for
+// a different file format, same known gap (a listing that mentions "laser
+// cut" only in passing, e.g. bundled with a real STL, could still be wrongly
+// excluded).
+const NON_3D_PRINT_PATTERN = /\b(svg|dxf|glowforge|cricut|laser\s*cut|cross\s*stitch|embroidery|sewing pattern|vector file)\b/i;
+
+function isLikely3DPrintFile(listing: EtsyListing): boolean {
+  const haystack = `${listing.title} ${(listing.tags ?? []).join(" ")}`;
+  return !NON_3D_PRINT_PATTERN.test(haystack);
+}
 
 // findAllListingsActive's own `includes` param doesn't actually return
 // images despite being documented to (confirmed against a live response --
@@ -69,7 +91,9 @@ async function search(query: string, creds: ProviderCredentials): Promise<Provid
 
   const data = await res.json();
   const listings: EtsyListing[] = data?.results ?? [];
-  const digital = listings.filter((listing) => listing.listing_type === "download").slice(0, RESULT_LIMIT);
+  const digital = listings
+    .filter((listing) => listing.listing_type === "download" && isLikely3DPrintFile(listing))
+    .slice(0, RESULT_LIMIT);
 
   return Promise.all(
     digital.map(async (listing) => {

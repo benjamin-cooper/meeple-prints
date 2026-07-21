@@ -10,7 +10,60 @@ import { prisma } from "@/lib/prisma";
 import { searchAllProviders } from "@/lib/providers";
 import { getProviderCredentials } from "@/lib/providers/env-credentials";
 import { guessTypeFromTitle } from "@/lib/providers/guess-type";
+import { findDuplicateIndices } from "@/lib/providers/dedupe";
 import { MISC_GAME_BGG_ID } from "@/lib/constants";
+
+/**
+ * searchAllProviders already dedupes cross-domain matches within one call,
+ * but that only ever compares results from the SAME scan against each
+ * other -- it has no idea what's already cached from a previous one. A
+ * provider that was down/unconfigured (Etsy pending approval, say) finding
+ * the same listing weeks after another site already cached it would never
+ * get compared, and both sit in Catalog side by side forever. This closes
+ * that gap by pulling the game's existing not-yet-hidden cache into the
+ * same dedupe pass as this scan's fresh results, then either hiding the
+ * losing existing row or dropping the losing new one before it's ever
+ * created.
+ */
+async function dedupeAgainstExisting<
+  T extends { domain: string; results: { url: string; title: string; ratingCount: number | null; likesCount: number | null }[] }
+>(gameId: number, outcomes: T[]): Promise<T[]> {
+  const newFlat = outcomes.flatMap((o, oi) => o.results.map((r, ri) => ({ ...r, domain: o.domain, oi, ri })));
+  if (newFlat.length === 0) return outcomes;
+
+  // No need to exclude a new result's own already-cached row here (e.g. the
+  // same Cults3D listing being refreshed) -- findDuplicateIndices already
+  // skips same-domain pairs, so a row can never be compared against its own
+  // refresh; it can only ever be compared against a genuinely different
+  // domain's copy, which is exactly what needs resolving.
+  const existing = await prisma.discoveredPrint.findMany({
+    where: { gameId, hidden: false },
+    select: { id: true, title: true, domain: true, ratingCount: true, likesCount: true },
+  });
+  if (existing.length === 0) return outcomes;
+
+  const combined = [...existing, ...newFlat];
+  const toDrop = findDuplicateIndices(combined);
+  if (toDrop.size === 0) return outcomes;
+
+  const existingIdsToHide = [...toDrop].filter((i) => i < existing.length).map((i) => existing[i].id);
+  if (existingIdsToHide.length) {
+    await prisma.discoveredPrint.updateMany({ where: { id: { in: existingIdsToHide } }, data: { hidden: true } });
+  }
+
+  const newDropKeys = new Set(
+    [...toDrop]
+      .filter((i) => i >= existing.length)
+      .map((i) => combined[i] as (typeof newFlat)[number])
+      .map((r) => `${r.oi}:${r.ri}`)
+  );
+  if (newDropKeys.size === 0) return outcomes;
+
+  return outcomes.map((o, oi) => ({
+    ...o,
+    results: o.results.filter((_, ri) => !newDropKeys.has(`${oi}:${ri}`)),
+  }));
+}
 
 export async function scanGame(
   game: { id: number; name: string },
@@ -26,7 +79,7 @@ export async function scanGame(
   // over already-unique results, same behavior as before this supported
   // more than one query.
   const perQuery = await Promise.all(queries.map((q) => searchAllProviders(q, creds)));
-  const outcomes = perQuery[0].map((base, providerIndex) => {
+  const merged = perQuery[0].map((base, providerIndex) => {
     const seen = new Set<string>();
     const results = perQuery
       .flatMap((outcomesForQuery) => outcomesForQuery[providerIndex].results)
@@ -39,6 +92,8 @@ export async function scanGame(
     const anySucceeded = perQuery.some((outcomesForQuery) => outcomesForQuery[providerIndex].error === null);
     return { ...base, results, error: anySucceeded ? null : base.error };
   });
+
+  const outcomes = await dedupeAgainstExisting(game.id, merged);
 
   const urls = outcomes.flatMap((o) => o.results.map((r) => r.url));
   const existing = urls.length

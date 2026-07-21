@@ -1,3 +1,13 @@
+/**
+ * A pseudo-game for accessories that aren't tied to any specific title --
+ * dice towers, meeples, generic organizers. Never a real BGG ID (those are
+ * always positive), so it's safe to use as a sentinel without a schema
+ * change, and collection-sync.ts explicitly excludes it from drop detection
+ * so a BGG sync never flips it out of your collection.
+ */
+export const MISC_GAME_BGG_ID = -1;
+export const MISC_GAME_NAME = "Miscellaneous";
+
 export const SITE_LABELS: Record<string, string> = {
   "thingiverse.com": "Thingiverse",
   "printables.com": "Printables",

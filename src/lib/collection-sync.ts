@@ -10,6 +10,7 @@
 import { getBggCollection } from "@/lib/bgg";
 import { scanGamesWithBudget } from "@/lib/scan";
 import { prisma } from "@/lib/prisma";
+import { MISC_GAME_BGG_ID } from "@/lib/constants";
 
 export interface CollectionSyncResult {
   imported: number;
@@ -73,7 +74,9 @@ export async function syncBggCollection(
     where: { inCollection: true },
     include: { _count: { select: { products: true } } },
   });
-  const dropped = existing.filter((g) => !importedIds.has(g.bggId));
+  // The miscellaneous pseudo-game will never appear in a real BGG
+  // collection response, so it'd otherwise get marked dropped on every sync.
+  const dropped = existing.filter((g) => !importedIds.has(g.bggId) && g.bggId !== MISC_GAME_BGG_ID);
   if (dropped.length) {
     await prisma.game.updateMany({ where: { id: { in: dropped.map((g) => g.id) } }, data: { inCollection: false } });
   }

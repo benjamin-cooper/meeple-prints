@@ -16,6 +16,7 @@ import { ProductCard } from "@/components/product-card";
 import { ProductDialog } from "@/components/product-dialog";
 import { SearchResultsAggregator } from "@/components/search-results-aggregator";
 import { searchLinksForGame } from "@/lib/search-links";
+import { MISC_GAME_BGG_ID } from "@/lib/constants";
 import type { ProviderOutcome, ProviderResult } from "@/lib/providers/types";
 import type { Game, GameSummary, Product } from "@/lib/types";
 
@@ -150,6 +151,12 @@ export default function GameDetailPage({ params }: { params: Promise<{ id: strin
             )}
           </div>
           {game.yearPublished && <p className="text-sm text-muted-foreground">{game.yearPublished}</p>}
+          {game.bggId === MISC_GAME_BGG_ID && (
+            <p className="text-sm text-muted-foreground max-w-md">
+              Accessories that aren&apos;t tied to any specific game -- dice towers, meeples, generic organizers.
+              &quot;Search all sites&quot; here runs a curated set of generic terms instead of a game name.
+            </p>
+          )}
           <p className="text-sm text-muted-foreground">
             {game.products.length} print{game.products.length === 1 ? "" : "s"} saved
           </p>
@@ -158,30 +165,34 @@ export default function GameDetailPage({ params }: { params: Promise<{ id: strin
             <Button variant="secondary" className="gap-1.5" onClick={handleSearchAllSites} disabled={searching}>
               <Search className="size-4" /> {searching ? "Searching…" : "Search all sites"}
             </Button>
-            <Button
-              variant="outline"
-              className="gap-1.5"
-              nativeButton={false}
-              render={<a href={`https://boardgamegeek.com/boardgame/${game.bggId}`} target="_blank" rel="noopener noreferrer" />}
-            >
-              BGG <ExternalLink className="size-3.5" />
-            </Button>
-            {game.inCollection ? (
-              <Button variant="ghost" className="gap-1.5 text-muted-foreground hover:text-destructive" onClick={handleRemoveFromCollection}>
-                <FolderMinus className="size-4" /> Remove from collection
-              </Button>
-            ) : (
-              <Button variant="ghost" className="gap-1.5 text-muted-foreground" onClick={() => setInCollection(true)}>
-                <FolderPlus className="size-4" /> Add back to collection
-              </Button>
+            {game.bggId !== MISC_GAME_BGG_ID && (
+              <>
+                <Button
+                  variant="outline"
+                  className="gap-1.5"
+                  nativeButton={false}
+                  render={<a href={`https://boardgamegeek.com/boardgame/${game.bggId}`} target="_blank" rel="noopener noreferrer" />}
+                >
+                  BGG <ExternalLink className="size-3.5" />
+                </Button>
+                {game.inCollection ? (
+                  <Button variant="ghost" className="gap-1.5 text-muted-foreground hover:text-destructive" onClick={handleRemoveFromCollection}>
+                    <FolderMinus className="size-4" /> Remove from collection
+                  </Button>
+                ) : (
+                  <Button variant="ghost" className="gap-1.5 text-muted-foreground" onClick={() => setInCollection(true)}>
+                    <FolderPlus className="size-4" /> Add back to collection
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  className="gap-1.5 text-muted-foreground hover:text-destructive"
+                  onClick={() => { setDeleteConfirmText(""); setDeleteDialogOpen(true); }}
+                >
+                  <Trash2 className="size-4" /> Delete permanently
+                </Button>
+              </>
             )}
-            <Button
-              variant="ghost"
-              className="gap-1.5 text-muted-foreground hover:text-destructive"
-              onClick={() => { setDeleteConfirmText(""); setDeleteDialogOpen(true); }}
-            >
-              <Trash2 className="size-4" /> Delete permanently
-            </Button>
           </div>
         </div>
       </div>
@@ -206,22 +217,26 @@ export default function GameDetailPage({ params }: { params: Promise<{ id: strin
           <SearchResultsAggregator outcomes={outcomes} gameId={game.id} onSaved={upsertLocal} />
         )}
 
-        <p className="text-xs text-muted-foreground">
-          MakerWorld can&apos;t be searched automatically, so browse it directly instead:
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {searchLinksForGame(game.name).map((s) => (
-            <a
-              key={s.key}
-              href={s.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-mono px-2.5 py-1.5 rounded-md border border-border bg-card hover:border-primary/60 hover:text-primary transition-colors"
-            >
-              {s.label} ↗
-            </a>
-          ))}
-        </div>
+        {game.bggId !== MISC_GAME_BGG_ID && (
+          <>
+            <p className="text-xs text-muted-foreground">
+              MakerWorld can&apos;t be searched automatically, so browse it directly instead:
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {searchLinksForGame(game.name).map((s) => (
+                <a
+                  key={s.key}
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-mono px-2.5 py-1.5 rounded-md border border-border bg-card hover:border-primary/60 hover:text-primary transition-colors"
+                >
+                  {s.label} ↗
+                </a>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       <ProductDialog

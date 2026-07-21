@@ -10,9 +10,35 @@ import { prisma } from "@/lib/prisma";
 import { searchAllProviders } from "@/lib/providers";
 import { getProviderCredentials } from "@/lib/providers/env-credentials";
 import { guessTypeFromTitle } from "@/lib/providers/guess-type";
+import { MISC_GAME_BGG_ID } from "@/lib/constants";
 
-export async function scanGame(game: { id: number; name: string }) {
-  const outcomes = await searchAllProviders(game.name, getProviderCredentials());
+export async function scanGame(
+  game: { id: number; name: string },
+  options?: { queries?: string[]; extraFilter?: (title: string) => boolean }
+) {
+  const queries = options?.queries ?? [game.name];
+  const creds = getProviderCredentials();
+
+  // Multiple queries (the miscellaneous game's curated term list) get
+  // merged per-provider and deduped by URL -- a listing can legitimately
+  // match more than one query (e.g. "dice tower" and "d20 dice tray").
+  // For the single-query case (every regular game) this is a no-op pass
+  // over already-unique results, same behavior as before this supported
+  // more than one query.
+  const perQuery = await Promise.all(queries.map((q) => searchAllProviders(q, creds)));
+  const outcomes = perQuery[0].map((base, providerIndex) => {
+    const seen = new Set<string>();
+    const results = perQuery
+      .flatMap((outcomesForQuery) => outcomesForQuery[providerIndex].results)
+      .filter((r) => {
+        if (seen.has(r.url)) return false;
+        seen.add(r.url);
+        return true;
+      })
+      .filter((r) => !options?.extraFilter || options.extraFilter(r.title));
+    const anySucceeded = perQuery.some((outcomesForQuery) => outcomesForQuery[providerIndex].error === null);
+    return { ...base, results, error: anySucceeded ? null : base.error };
+  });
 
   const urls = outcomes.flatMap((o) => o.results.map((r) => r.url));
   const existing = urls.length
@@ -91,8 +117,12 @@ export async function scanNextBatch(
   budgetMs: number = DEFAULT_BATCH_TIME_BUDGET_MS
 ): Promise<{ scanned: number; newPrints: number }> {
   // SQLite orders NULL as smallest, so never-scanned games naturally sort first.
+  // Excludes the miscellaneous pseudo-game: it needs its own curated query
+  // list (see misc-terms.ts), not a name-based search for the literal
+  // string "Miscellaneous" -- kept manual-only for now via its own "Search
+  // all sites" button, not part of the automatic daily rotation.
   const games = await prisma.game.findMany({
-    where: { inCollection: true },
+    where: { inCollection: true, bggId: { not: MISC_GAME_BGG_ID } },
     orderBy: [{ lastScannedAt: "asc" }, { name: "asc" }],
     take: limit,
   });
@@ -107,7 +137,11 @@ export { scanGamesWithBudget };
 export async function scanAll(
   onProgress?: (done: number, total: number, gameName: string) => void
 ): Promise<{ scanned: number; newPrints: number }> {
-  const games = await prisma.game.findMany({ where: { inCollection: true }, orderBy: { name: "asc" } });
+  // Excludes the miscellaneous pseudo-game -- see scanNextBatch above.
+  const games = await prisma.game.findMany({
+    where: { inCollection: true, bggId: { not: MISC_GAME_BGG_ID } },
+    orderBy: { name: "asc" },
+  });
 
   let newPrints = 0;
   for (let i = 0; i < games.length; i++) {

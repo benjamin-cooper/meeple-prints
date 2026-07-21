@@ -32,6 +32,15 @@ interface CultsResult {
   likesCount?: number | null;
 }
 
+// illustrationImageUrl is usually a static image, but for creations whose
+// main preview is an animated turntable, Cults3D returns a video file
+// (.mp4) at that same field instead -- confirmed live, ~2% of results.
+// An <img> tag can't render video, so passing it through just silently
+// shows nothing; falling back to null renders the honest "No image" state.
+function isImageUrl(url: string | undefined): url is string {
+  return !!url && !/\.(mp4|webm|mov|m4v)(\?|$)/i.test(url);
+}
+
 async function search(query: string, creds: ProviderCredentials): Promise<ProviderResult[]> {
   const authHeader = "Basic " + Buffer.from(`${creds.cultsUsername}:${creds.cultsApiKey}`).toString("base64");
 
@@ -54,7 +63,7 @@ async function search(query: string, creds: ProviderCredentials): Promise<Provid
     return {
       url: r.url,
       title: r.name,
-      thumbnailUrl: r.illustrationImageUrl || null,
+      thumbnailUrl: isImageUrl(r.illustrationImageUrl) ? r.illustrationImageUrl! : null,
       creator: r.creator?.nick ?? null,
       price: price && price > 0 ? price : null,
       currency: price && price > 0 ? "USD" : null,

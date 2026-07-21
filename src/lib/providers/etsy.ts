@@ -11,10 +11,14 @@ interface EtsyListing {
   title: string;
   url: string;
   price?: { amount?: number; divisor?: number; currency_code?: string };
-  images?: Array<{ url_170x135?: string; url_570xN?: string }>;
   /** "physical" | "download" | "both", confirmed against a live response. */
   listing_type?: string;
   num_favorers?: number;
+}
+
+interface EtsyImage {
+  url_170x135?: string;
+  url_570xN?: string;
 }
 
 // findAllListingsActive has no query param to filter by listing_type, so
@@ -25,11 +29,31 @@ interface EtsyListing {
 const FETCH_LIMIT = 24;
 const RESULT_LIMIT = 8;
 
+// findAllListingsActive's own `includes` param doesn't actually return
+// images despite being documented to (confirmed against a live response --
+// no "images" key at all, regardless of "Images"/"images" casing), so each
+// surviving listing needs its own call to the separate images endpoint.
+// Fetched after the listing_type filter so this is at most RESULT_LIMIT
+// calls, not FETCH_LIMIT.
+async function fetchThumbnail(listingId: number, apiKey: string): Promise<string | null> {
+  try {
+    const res = await fetch(`https://api.etsy.com/v3/application/listings/${listingId}/images`, {
+      headers: { "x-api-key": apiKey },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const image: EtsyImage | undefined = data?.results?.[0];
+    return image?.url_570xN ?? image?.url_170x135 ?? null;
+  } catch {
+    return null;
+  }
+}
+
 async function search(query: string, creds: ProviderCredentials): Promise<ProviderResult[]> {
   const params = new URLSearchParams({
     keywords: query,
     limit: String(FETCH_LIMIT),
-    includes: "Images",
   });
   // Etsy expects the x-api-key header as "keystring:sharedSecret", not the
   // keystring alone, confirmed against a live 403 response body.
@@ -45,18 +69,17 @@ async function search(query: string, creds: ProviderCredentials): Promise<Provid
 
   const data = await res.json();
   const listings: EtsyListing[] = data?.results ?? [];
+  const digital = listings.filter((listing) => listing.listing_type === "download").slice(0, RESULT_LIMIT);
 
-  return listings
-    .filter((listing) => listing.listing_type === "download")
-    .slice(0, RESULT_LIMIT)
-    .map((listing) => {
+  return Promise.all(
+    digital.map(async (listing) => {
       const amount = listing.price?.amount ?? 0;
       const divisor = listing.price?.divisor ?? 100;
       const price = amount / divisor;
       return {
         url: listing.url,
         title: listing.title,
-        thumbnailUrl: listing.images?.[0]?.url_570xN ?? listing.images?.[0]?.url_170x135 ?? null,
+        thumbnailUrl: await fetchThumbnail(listing.listing_id, apiKey),
         creator: null,
         price,
         currency: listing.price?.currency_code ?? "USD",
@@ -65,7 +88,8 @@ async function search(query: string, creds: ProviderCredentials): Promise<Provid
         ratingCount: null,
         likesCount: listing.num_favorers ?? null,
       };
-    });
+    })
+  );
 }
 
 export const etsyProvider: SearchProvider = {

@@ -36,8 +36,9 @@ const RESULT_LIMIT = 8;
 // listing_type: "download" just means "buying this gets you a file," not
 // that the file is an STL -- Etsy's digital tabletop-accessory listings are
 // a mix of 3D-print files, laser-cutter/vinyl-cutter/sewing files (SVG,
-// DXF, cross-stitch, embroidery), and flat printable images (posters, wall
-// art, game-room decor meant for a home/paper printer, not a 3D printer).
+// DXF, cross-stitch, embroidery), flat printable images (posters, wall
+// art, game-room decor meant for a home/paper printer, not a 3D printer),
+// and plain reading material (ebooks, study guides, journals, book covers).
 // There's no clean structured signal for this: file_data on the full
 // listing detail is a vague string like "1 TXT", and getting it needs a
 // third API call per listing on top of search and images. Same category of
@@ -45,8 +46,17 @@ const RESULT_LIMIT = 8;
 // on a strong title/tag signal for a different content type, same known
 // gap (a listing that mentions "poster" only in passing, e.g. a bundle
 // that includes both an STL and a poster, could still be wrongly excluded).
+//
+// The ebook/journal/etc terms exist specifically for games whose name is
+// also an ordinary English word or a real historical figure ("Speakeasy",
+// "Galileo Galilei", "Recall", "Falling") -- relevance.ts's title-word-match
+// step has no way to know the game isn't what a listing is actually about,
+// so Etsy's own unrelated ebooks, planners, and book covers pass it cleanly
+// on name alone. Confirmed live: a USMLE med-school study guide for "Recall"
+// and a kids' astronomy biography of the actual Galileo for "Galileo
+// Galilei" were both cached before these terms existed.
 const NON_3D_PRINT_PATTERN =
-  /\b(svg|dxf|glowforge|cricut|laser\s*cut|cross\s*stitch|embroidery|sewing pattern|vector file|poster|wall\s*art|art\s*print|clip\s*art|coloring\s*page|greeting\s*card|invitation\s*template)\b/i;
+  /\b(svg|dxf|glowforge|cricut|laser\s*cut|cross\s*stitch|embroidery|sewing pattern|vector file|poster|wall\s*art|art\s*print|clip\s*art|coloring\s*page|greeting\s*card|invitation\s*template|e-?books?|biography|stud(y|ies)\s*guide|workbook|homeschool|activity book|planner|journal|book cover)\b/i;
 
 function isLikely3DPrintFile(listing: EtsyListing): boolean {
   const haystack = `${listing.title} ${(listing.tags ?? []).join(" ")}`;

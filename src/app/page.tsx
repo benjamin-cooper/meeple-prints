@@ -220,10 +220,13 @@ export default function CatalogPage() {
   const savedFiltered = useMemo(() => filtered.filter((i) => i.kind === "saved"), [filtered]);
 
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  // Resetting pagination when the result set changes underneath it is a
-  // legitimate case for syncing state to a dependency change in an effect.
+  // Depends on the filter *inputs*, not `filtered` itself -- `filtered` is a
+  // new array reference on every render where `items` changes too, including
+  // a hide/save action deep in an already-paginated list, which used to snap
+  // the user back to page one every time they dismissed something. Only an
+  // actual change to search/filter/sort criteria should reset pagination.
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => setVisibleCount(PAGE_SIZE), [filtered]);
+  useEffect(() => setVisibleCount(PAGE_SIZE), [query, gameFilter, typeFilter, domainFilter, statusFilter, freeOnly, savedOnly, sort]);
   const visibleItems = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
   const hasMore = filtered.length > visibleCount;
 

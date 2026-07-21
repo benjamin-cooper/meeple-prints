@@ -35,16 +35,18 @@ const RESULT_LIMIT = 8;
 
 // listing_type: "download" just means "buying this gets you a file," not
 // that the file is an STL -- Etsy's digital tabletop-accessory listings are
-// a mix of 3D-print files and laser-cutter/vinyl-cutter/sewing files (SVG,
-// DXF, cross-stitch, embroidery). There's no clean structured signal for
-// this: file_data on the full listing detail is a vague string like "1 TXT",
-// and getting it needs a third API call per listing on top of search and
-// images. Same category of accepted-imperfect heuristic as
-// src/lib/providers/relevance.ts: exclude on a strong title/tag signal for
-// a different file format, same known gap (a listing that mentions "laser
-// cut" only in passing, e.g. bundled with a real STL, could still be wrongly
-// excluded).
-const NON_3D_PRINT_PATTERN = /\b(svg|dxf|glowforge|cricut|laser\s*cut|cross\s*stitch|embroidery|sewing pattern|vector file)\b/i;
+// a mix of 3D-print files, laser-cutter/vinyl-cutter/sewing files (SVG,
+// DXF, cross-stitch, embroidery), and flat printable images (posters, wall
+// art, game-room decor meant for a home/paper printer, not a 3D printer).
+// There's no clean structured signal for this: file_data on the full
+// listing detail is a vague string like "1 TXT", and getting it needs a
+// third API call per listing on top of search and images. Same category of
+// accepted-imperfect heuristic as src/lib/providers/relevance.ts: exclude
+// on a strong title/tag signal for a different content type, same known
+// gap (a listing that mentions "poster" only in passing, e.g. a bundle
+// that includes both an STL and a poster, could still be wrongly excluded).
+const NON_3D_PRINT_PATTERN =
+  /\b(svg|dxf|glowforge|cricut|laser\s*cut|cross\s*stitch|embroidery|sewing pattern|vector file|poster|wall\s*art|art\s*print|clip\s*art|coloring\s*page|greeting\s*card|invitation\s*template)\b/i;
 
 function isLikely3DPrintFile(listing: EtsyListing): boolean {
   const haystack = `${listing.title} ${(listing.tags ?? []).join(" ")}`;

@@ -35,28 +35,47 @@ const RESULT_LIMIT = 8;
 
 // listing_type: "download" just means "buying this gets you a file," not
 // that the file is an STL -- Etsy's digital tabletop-accessory listings are
-// a mix of 3D-print files, laser-cutter/vinyl-cutter/sewing files (SVG,
-// DXF, cross-stitch, embroidery), flat printable images (posters, wall
-// art, game-room decor meant for a home/paper printer, not a 3D printer),
-// and plain reading material (ebooks, study guides, journals, book covers).
-// There's no clean structured signal for this: file_data on the full
-// listing detail is a vague string like "1 TXT", and getting it needs a
-// third API call per listing on top of search and images. Same category of
-// accepted-imperfect heuristic as src/lib/providers/relevance.ts: exclude
-// on a strong title/tag signal for a different content type, same known
-// gap (a listing that mentions "poster" only in passing, e.g. a bundle
-// that includes both an STL and a poster, could still be wrongly excluded).
+// a mix of 3D-print files, laser-cutter/vinyl-cutter/sewing/fiber-craft
+// files (SVG, DXF, cross-stitch, embroidery, crochet/knitting patterns),
+// flat printable images (posters, wall art, game-room decor meant for a
+// home/paper printer, not a 3D printer), plain reading material (ebooks,
+// study guides, journals, book covers), sublimation/apparel graphics, and
+// editable Canva party templates (invitations, birthday signage). There's
+// no clean structured signal for this: file_data on the full listing detail
+// is a vague string like "1 TXT", and getting it needs a third API call per
+// listing on top of search and images. Same category of accepted-imperfect
+// heuristic as src/lib/providers/relevance.ts: exclude on a strong
+// title/tag signal for a different content type, same known gap (a listing
+// that mentions "poster" only in passing, e.g. a bundle that includes both
+// an STL and a poster, could still be wrongly excluded).
 //
-// The ebook/journal/etc terms exist specifically for games whose name is
-// also an ordinary English word or a real historical figure ("Speakeasy",
-// "Galileo Galilei", "Recall", "Falling") -- relevance.ts's title-word-match
-// step has no way to know the game isn't what a listing is actually about,
-// so Etsy's own unrelated ebooks, planners, and book covers pass it cleanly
-// on name alone. Confirmed live: a USMLE med-school study guide for "Recall"
-// and a kids' astronomy biography of the actual Galileo for "Galileo
-// Galilei" were both cached before these terms existed.
+// Most of these terms exist specifically for games whose name is also an
+// ordinary English word, a real historical figure, or an event/party theme
+// ("Speakeasy", "Galileo Galilei", "Recall", "Hibachi", "Emberleaf") --
+// relevance.ts's title-word-match step has no way to know the game isn't
+// what a listing is actually about, so Etsy's own unrelated ebooks, baby
+// shower invitations, and crochet patterns pass it cleanly on name alone.
+// Systematic audit of the full hidden-print set (2026-07-21) confirmed this
+// as a real recurring pattern, not a one-off: multiple "Hibachi"-game
+// listings were actually hibachi-dinner birthday invitations, an
+// "Emberleaf"-game listing was a crochet scarf pattern, etc.
+//
+// This can only ever catch a *content-type* mismatch, not a *subject*
+// mismatch -- a listing can be a completely genuine, well-made 3D-print
+// file and still be wrong for the game, if the game's name is also a real
+// object/place/profession (a real "Galileo Galilei" pendulum clock STL, a
+// real "Luthier" guitar headstock template, real "Lisboa" city-name decor).
+// Tried requiring a positive tabletop-signal word (dice/miniature/board
+// game/etc) as a second layer for these games specifically, same mechanism
+// as misc-terms.ts's hasTabletopSignal() -- rejected after checking it
+// against live data: it would have cut the large majority of these games'
+// genuinely correct results too (e.g. nearly every real "Speakeasy" or
+// "Quacks of Quedlinburg" insert/token-tray listing, since those titles
+// just name the game and the part, never the words "board game" or
+// "tabletop"). No title-only heuristic can fix that gap without deleting
+// more real results than fake ones; hiding stays the right tool for it.
 const NON_3D_PRINT_PATTERN =
-  /\b(svg|dxf|glowforge|cricut|laser\s*cut|cross\s*stitch|embroidery|sewing pattern|vector file|poster|wall\s*art|art\s*print|clip\s*art|coloring\s*page|greeting\s*card|invitation\s*template|e-?books?|biography|stud(y|ies)\s*guide|workbook|homeschool|activity book|planner|journal|book cover)\b/i;
+  /\b(svg|dxf|glowforge|cricut|laser\s*cut|cross\s*stitch|embroidery|sewing pattern|vector file|poster|wall\s*art|art\s*print|clip\s*art|coloring\s*page|greeting\s*card|invitation\s*template|e-?books?|biography|stud(y|ies)\s*guide|workbook|homeschool|activity book|planner|journal|book cover|editable|invit(e|ation)s?|sublimation|crochet|knitting|knit|beading|beadwork|canva|digital paper pack)\b/i;
 
 function isLikely3DPrintFile(listing: EtsyListing): boolean {
   const haystack = `${listing.title} ${(listing.tags ?? []).join(" ")}`;

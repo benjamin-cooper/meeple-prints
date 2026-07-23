@@ -114,28 +114,34 @@ async function resolveCrossGameDuplicates<T extends { domain: string; results: {
 
 export async function scanGame(
   game: { id: number; name: string; bggId: number },
-  options?: { queries?: string[]; extraFilter?: (title: string) => boolean }
+  options?: { queries?: { term: string; extraFilter: ((title: string) => boolean) | null }[] }
 ) {
-  const queries = options?.queries ?? [game.name];
+  const queries = options?.queries ?? [{ term: game.name, extraFilter: null }];
   const creds = getProviderCredentials();
 
   // Multiple queries (the miscellaneous game's curated term list) get
   // merged per-provider and deduped by URL -- a listing can legitimately
-  // match more than one query (e.g. "dice tower" and "d20 dice tray").
-  // For the single-query case (every regular game) this is a no-op pass
-  // over already-unique results, same behavior as before this supported
-  // more than one query.
-  const perQuery = await Promise.all(queries.map((q) => searchAllProviders(q, creds)));
+  // match more than one query (e.g. "dice tower" and "d20 dice tray"). Each
+  // query carries its own extraFilter rather than one shared across the
+  // whole scan -- a generic term like "insert organizer" needs the
+  // tabletop-signal safety net, but a precise brand term like "wyrmwood
+  // table" would lose real results to it (see misc-terms.ts). For the
+  // single-query case (every regular game) this is a no-op pass over
+  // already-unique results, same behavior as before this supported more
+  // than one query.
+  const perQuery = await Promise.all(queries.map((q) => searchAllProviders(q.term, creds)));
   const merged = perQuery[0].map((base, providerIndex) => {
     const seen = new Set<string>();
     const results = perQuery
-      .flatMap((outcomesForQuery) => outcomesForQuery[providerIndex].results)
+      .flatMap((outcomesForQuery, qi) => {
+        const filter = queries[qi].extraFilter;
+        return outcomesForQuery[providerIndex].results.filter((r) => !filter || filter(r.title));
+      })
       .filter((r) => {
         if (seen.has(r.url)) return false;
         seen.add(r.url);
         return true;
-      })
-      .filter((r) => !options?.extraFilter || options.extraFilter(r.title));
+      });
     const anySucceeded = perQuery.some((outcomesForQuery) => outcomesForQuery[providerIndex].error === null);
     return { ...base, results, error: anySucceeded ? null : base.error };
   });

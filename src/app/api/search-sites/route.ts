@@ -9,7 +9,7 @@
 import { scanGame } from "@/lib/scan";
 import { prisma } from "@/lib/prisma";
 import { MISC_GAME_BGG_ID } from "@/lib/constants";
-import { MISC_SEARCH_TERMS, hasTabletopSignal } from "@/lib/providers/misc-terms";
+import { MISC_SEARCH_TERMS } from "@/lib/providers/misc-terms";
 import type { NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
   const annotated =
     game.bggId === MISC_GAME_BGG_ID
-      ? await scanGame(game, { queries: MISC_SEARCH_TERMS, extraFilter: hasTabletopSignal })
+      ? await scanGame(game, { queries: MISC_SEARCH_TERMS })
       : await scanGame(game);
 
   return Response.json({ game: { id: game.id, name: game.name }, providers: annotated });

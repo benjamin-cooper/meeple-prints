@@ -65,8 +65,55 @@ async function dedupeAgainstExisting<
   }));
 }
 
+/**
+ * dedupeAgainstExisting only ever compares within one game's own rows, which
+ * is right for the normal case (nothing else would search a specific game's
+ * exact name). The Miscellaneous pseudo-game breaks that assumption: its
+ * curated generic terms ("board game insert organizer") routinely surface
+ * the exact same listing a specific game's own scan already found and
+ * attached correctly -- confirmed live, the identical cults3d.com URL for a
+ * Finspan organizer ended up cached under both "Finspan" and
+ * "Miscellaneous". findDuplicateIndices wouldn't catch this either way: it
+ * skips same-domain pairs, and this is the *same* domain, same URL, just a
+ * different gameId -- a dimension that unique constraint doesn't cover
+ * (@@unique([gameId, url])).
+ *
+ * Resolved by exact URL match (not fuzzy title similarity -- unnecessary
+ * when it's the literal same listing) and always in favor of the specific
+ * game over Miscellaneous, regardless of which one has more
+ * ratings/likes: a Finspan accessory belongs on the Finspan page.
+ */
+async function resolveCrossGameDuplicates<T extends { domain: string; results: { url: string }[] }>(
+  game: { id: number; bggId: number },
+  outcomes: T[]
+): Promise<T[]> {
+  const urls = outcomes.flatMap((o) => o.results.map((r) => r.url));
+  if (urls.length === 0) return outcomes;
+
+  const isMisc = game.bggId === MISC_GAME_BGG_ID;
+
+  if (isMisc) {
+    const elsewhere = await prisma.discoveredPrint.findMany({
+      where: { url: { in: urls }, hidden: false, gameId: { not: game.id } },
+      select: { url: true },
+    });
+    if (elsewhere.length === 0) return outcomes;
+    const claimedUrls = new Set(elsewhere.map((r) => r.url));
+    return outcomes.map((o) => ({ ...o, results: o.results.filter((r) => !claimedUrls.has(r.url)) }));
+  }
+
+  const miscDupes = await prisma.discoveredPrint.findMany({
+    where: { url: { in: urls }, hidden: false, gameId: { not: game.id }, game: { bggId: MISC_GAME_BGG_ID } },
+    select: { id: true },
+  });
+  if (miscDupes.length) {
+    await prisma.discoveredPrint.updateMany({ where: { id: { in: miscDupes.map((r) => r.id) } }, data: { hidden: true } });
+  }
+  return outcomes;
+}
+
 export async function scanGame(
-  game: { id: number; name: string },
+  game: { id: number; name: string; bggId: number },
   options?: { queries?: string[]; extraFilter?: (title: string) => boolean }
 ) {
   const queries = options?.queries ?? [game.name];
@@ -93,7 +140,8 @@ export async function scanGame(
     return { ...base, results, error: anySucceeded ? null : base.error };
   });
 
-  const outcomes = await dedupeAgainstExisting(game.id, merged);
+  const deduped = await dedupeAgainstExisting(game.id, merged);
+  const outcomes = await resolveCrossGameDuplicates(game, deduped);
 
   const urls = outcomes.flatMap((o) => o.results.map((r) => r.url));
   const existing = urls.length
@@ -135,7 +183,7 @@ export async function scanGame(
   }));
 }
 
-async function scanOne(game: { id: number; name: string }): Promise<number> {
+async function scanOne(game: { id: number; name: string; bggId: number }): Promise<number> {
   const before = await prisma.discoveredPrint.count({ where: { gameId: game.id } });
   await scanGame(game);
   const after = await prisma.discoveredPrint.count({ where: { gameId: game.id } });
@@ -152,7 +200,7 @@ async function scanOne(game: { id: number; name: string }): Promise<number> {
 export const DEFAULT_BATCH_TIME_BUDGET_MS = 45_000;
 
 async function scanGamesWithBudget(
-  games: { id: number; name: string }[],
+  games: { id: number; name: string; bggId: number }[],
   budgetMs: number
 ): Promise<{ scanned: number; newPrints: number }> {
   const start = Date.now();

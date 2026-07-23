@@ -33,6 +33,12 @@ export const PRODUCT_TYPES = [
   { value: "tokens", label: "Tokens / Resources" },
   { value: "card-holder", label: "Card Holder / Stand" },
   { value: "tracker", label: "Tracker / Dashboard" },
+  // A fitted insert replaces the box's own cardboard, organizing everything
+  // to the box's exact dimensions. A tray/caddy is usually a standalone
+  // piece used during play (a player's component tray) or generic storage
+  // not fitted to any particular box -- a real, distinct use case, not a
+  // sub-case of "insert".
+  { value: "tray", label: "Tray / Caddy" },
   { value: "other", label: "Other" },
 ] as const;
 

@@ -37,13 +37,17 @@ const RULES: Array<{ type: string; pattern: RegExp }> = [
   { type: "tokens", pattern: /\bcoins?\b|\btokens?\b|\bmeeples?\b|\bresources?\b/i },
   { type: "terrain", pattern: /\bterrain\b/i },
   { type: "miniature", pattern: /\bminiatures?\b|\bminis?\b|\bproxy\b|\bproxies\b/i },
-  // Last resort before "other" -- generic storage words with no stronger
-  // signal (no "insert"/"organizer", no token/coin/meeple/resource, no
-  // terrain, no miniature) elsewhere in the title. The single biggest gap
-  // found auditing "other": tile trays, card storage, board storage that
-  // are functionally inserts/organizers but don't use either of those
-  // two words, and don't belong to any of the other categories either.
-  { type: "insert", pattern: /\btray\b|\bcaddy\b|\bstorage\b|\benclosure\b/i },
+  // Last resort before "other" -- generic tray/storage words with no
+  // stronger signal (no "insert"/"organizer", no token/coin/meeple/
+  // resource, no terrain, no miniature) elsewhere in the title. Deliberately
+  // its own "tray" type, not folded into "insert": a fitted insert replaces
+  // the box's own cardboard to its exact dimensions, while a tray/caddy is
+  // usually a standalone piece used during play or generic storage not
+  // fitted to any particular box -- a real, distinct use case someone would
+  // want to filter for separately. The single biggest gap found auditing
+  // "other": tile trays, card storage, board storage that don't say
+  // "insert"/"organizer" and don't belong to any of the other categories.
+  { type: "tray", pattern: /\btray\b|\bcaddy\b|\bstorage\b|\benclosure\b/i },
 ];
 
 export function guessTypeFromTitle(title: string): string {

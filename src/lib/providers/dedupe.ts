@@ -23,6 +23,16 @@ export interface Dedupable {
 // listing someone needs. Bias hard toward precision.
 const SIMILARITY_THRESHOLD = 0.85;
 
+// "without" is just the other common way makers phrase "no" ("no
+// expansion" / "without expansion" mean the same thing) -- confirmed live,
+// "Bitoku Game Organizer (no expansion)" vs "...(without expansion)" only
+// scored 0.67 and slipped past the threshold as two different listings.
+// Deliberately narrow: this does NOT touch "with", so the exact case this
+// file's own threshold comment warns about ("Bitoku Game Organizer WITH
+// EXPANSION" vs "...(no expansion)" -- genuinely opposite variants) is
+// unaffected and still correctly scores low.
+const SYNONYMS: Record<string, string> = { without: "no" };
+
 function tokenize(title: string): Set<string> {
   return new Set(
     title
@@ -30,6 +40,7 @@ function tokenize(title: string): Set<string> {
       .replace(/[^a-z0-9\s]/g, " ")
       .split(/\s+/)
       .filter(Boolean)
+      .map((t) => SYNONYMS[t] ?? t)
   );
 }
 

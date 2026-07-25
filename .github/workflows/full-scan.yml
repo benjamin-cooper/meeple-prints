@@ -1,0 +1,37 @@
+name: Full scan
+
+# Vercel's Hobby plan caps cron jobs at once a day (see vercel.json's own
+# /api/cron/scan), and even that route is itself batch-limited to fit
+# inside a single serverless invocation's time limit -- it only gets
+# through ~4-10 games per run, so a full sweep of the whole collection
+# takes about two weeks. This runs scripts/full-scan.ts directly instead,
+# with no per-invocation time limit, so it actually gets through every
+# game in one run every morning.
+on:
+  schedule:
+    # 3am US Eastern. GitHub Actions cron is always UTC and doesn't shift
+    # for daylight saving -- this is anchored to EDT (UTC-4), so once EST
+    # starts (~November) it'll fire around 2am Eastern instead of 3am.
+    - cron: "0 7 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  full-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npx tsx scripts/full-scan.ts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_AUTH_TOKEN: ${{ secrets.DATABASE_AUTH_TOKEN }}
+          THINGIVERSE_TOKEN: ${{ secrets.THINGIVERSE_TOKEN }}
+          CULTS_USERNAME: ${{ secrets.CULTS_USERNAME }}
+          CULTS_API_KEY: ${{ secrets.CULTS_API_KEY }}
+          ETSY_KEYSTRING: ${{ secrets.ETSY_KEYSTRING }}
+          ETSY_SHARED_SECRET: ${{ secrets.ETSY_SHARED_SECRET }}
+          MYMINIFACTORY_API_KEY: ${{ secrets.MYMINIFACTORY_API_KEY }}

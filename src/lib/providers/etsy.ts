@@ -74,8 +74,19 @@ const RESULT_LIMIT = 8;
 // just name the game and the part, never the words "board game" or
 // "tabletop"). No title-only heuristic can fix that gap without deleting
 // more real results than fake ones; hiding stays the right tool for it.
+//
+// Second systematic audit (2026-07-29, after a real full-collection scan)
+// found a new dominant category the first pass hadn't seen: Twitch/OBS
+// streaming-overlay content. "Falling" and "Inferno" got flooded with
+// content-creator decorations ("Falling Leaves Twitch Overlay", "Inferno
+// Dragon Animated Stream Package") since streamers use exactly those words
+// for falling-snow/hearts and fire-themed overlays. Also added apparel
+// mockups, quilting patterns, flashcards, phone/TV-art wallpapers, recipes,
+// and font files -- same pattern, smaller volume. Checked all of these
+// against every currently-visible row in both databases before adding:
+// zero matches, meaning zero risk to real results.
 const NON_3D_PRINT_PATTERN =
-  /\b(svg|dxf|glowforge|cricut|laser\s*cut|cross\s*stitch|embroidery|sewing pattern|vector file|poster|wall\s*art|art\s*print|clip\s*art|coloring\s*page|greeting\s*card|invitation\s*template|e-?books?|biography|stud(y|ies)\s*guide|workbook|homeschool|activity book|planner|journal|book cover|editable|invit(e|ation)s?|sublimation|crochet|knitting|knit|beading|beadwork|canva|digital paper pack)\b/i;
+  /\b(svg|dxf|glowforge|cricut|laser\s*cut|cross\s*stitch|embroidery|sewing pattern|vector file|poster|wall\s*art|art\s*print|clip\s*art|coloring\s*page|greeting\s*card|invitation\s*template|e-?books?|biography|stud(y|ies)\s*guide|workbook|homeschool|activity book|planner|journal|book cover|editable|invit(e|ation)s?|sublimation|crochet|knitting|knit|beading|beadwork|canva|digital paper pack|twitch|obs|streamlabs|vtuber|webcam|stream(ing)?\s*(overlay|package|decoration|screen|transition|border|widget)|starting soon screen|mockup|quilt(ing)?\s*pattern|flash\s*cards?|phone wallpaper|frame tv art|live wallpaper|recipes?|\bfont\b)\b/i;
 
 function isLikely3DPrintFile(listing: EtsyListing): boolean {
   const haystack = `${listing.title} ${(listing.tags ?? []).join(" ")}`;

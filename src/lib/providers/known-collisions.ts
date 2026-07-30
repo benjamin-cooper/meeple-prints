@@ -56,7 +56,10 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   "Tag Team": /pokemon go|heroquest|\bwwf\b|funko pop/i,
   "The Anarchy": /sons of anarchy|marvel|spiderpunk/i,
   // "chainsaw man" added in the fifth audit -- an anime franchise.
-  Falling: /under falling skies|chainsaw man/i,
+  // "falling entropy" added in the sixth audit -- a maker/designer's actual
+  // username on these sites, which naturally collides with both "Falling"
+  // and "Entropy" since it contains both words.
+  Falling: /under falling skies|chainsaw man|falling entropy/i,
   Speakeasy: /murder mystery|speakeasy arms/i,
   // "charred earth"/"earth day"/"happiest place on earth" added in the
   // fifth audit -- a wargaming terrain term, the environmental holiday,
@@ -98,4 +101,12 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // names could safely be excluded; the rest stays in the unfixable
   // bucket.
   Sanctuary: /cthulhu|sisters of battle|sky children of (the )?light|rocamadour/i,
+  // Entropy has zero currently-correct results ever, same as "Sand" --
+  // it's a real thermodynamics term, so the noise splits between literal
+  // physics/chemistry content ("T-s diagram", "enthalpy") and several
+  // unrelated hobby-brand product lines that all happen to be named
+  // "Entropy" (a CNC calibration test block, an RC-crawler part, a razor
+  // brand, a fantasy miniature series called "Vessel of Entropy", and
+  // "Entropy: Zero", a Half-Life fan mod).
+  Entropy: /milled in aluminum|step files|t-s diagram|enthalpy|vessel of entropy|entropy zero|arnoz brain board|entropy cannon|entropy razors|falling entropy/i,
 };

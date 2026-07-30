@@ -120,8 +120,21 @@ const RESULT_LIMIT = 8;
 // Landscaping Logo" -- but isn't inherently game-specific, so kept generic
 // rather than per-game). Verified against every currently-visible Etsy
 // row: zero risk.
+//
+// Sixth systematic audit (2026-07-31, "Falling" and "Entropy" -- both
+// have zero currently-correct results ever, same as "Sand"). Found the
+// Procreate/Photoshop brush pattern only caught one word order ("Procreate
+// Brush Set" but not "Brushes: Procreate & Photoshop") -- fixed to catch
+// either. Added generic photo-editing overlays (distinct from the
+// streaming-overlay group -- "Photo Overlays", "Feather Photoshop
+// Overlays"), broadened "digital paper pack" to bare "digital paper"
+// (the "pack" requirement was arbitrary), added "coloring book" (only had
+// "coloring page" before), generic "sheet music" (previously only
+// Lacrimosa-specific), "bridal shower", "welcome sign", "rhinestone",
+// "savings challenge", and "A Level" (UK exam-board content, seen
+// recurring across both Recall and Entropy).
 const NON_3D_PRINT_PATTERN =
-  /\b(svg|dxf|glowforge|cricut|laser\s*cut|cross\s*stitch|embroidery|sewing patterns?|vector files?|posters?|wall\s*art|art\s*prints?|clip\s*art|coloring\s*pages?|greeting\s*cards?|invitation\s*templates?|e-?books?|biograph(y|ies)|stud(y|ies)\s*guides?|workbooks?|homeschool|activity books?|planners?|journals?|book covers?|editable|invit(e|ation)s?|sublimation|crochet|knitting|knit|beading|beadwork|canva|digital paper packs?|twitch|obs|streamlabs|vtuber|webcam|stream(ing)?\s*(overlays?|packages?|decorations?|screens?|transitions?|borders?|widgets?)|starting soon screens?|mockups?|quilt(ing)?\s*patterns?|flash\s*cards?|(phone|tablet|ipad|desktop)\s*(wallpaper|background)s?|frame tv art|recipes?|fonts?|digital backdrops?|(procreate|photoshop|ps)\s*brush(es)?|printable photos?|\bmp3\b|classroom decor|seamless patterns?|\bspells?\b|\brituals?\b|\bkarmic\b|regression|past life|divination|channeling|psychic reading|gift tags?|favor tags?|\blogos?\b)\b/i;
+  /\b(svg|dxf|glowforge|cricut|laser\s*cut|cross\s*stitch|embroidery|sewing patterns?|vector files?|posters?|wall\s*art|art\s*prints?|clip\s*art|coloring\s*pages?|coloring\s*books?|greeting\s*cards?|invitation\s*templates?|e-?books?|biograph(y|ies)|stud(y|ies)\s*guides?|workbooks?|homeschool|activity books?|planners?|journals?|book covers?|editable|invit(e|ation)s?|sublimation|crochet|knitting|knit|beading|beadwork|canva|digital papers?( packs?)?|twitch|obs|streamlabs|vtuber|webcam|stream(ing)?\s*(overlays?|packages?|decorations?|screens?|transitions?|borders?|widgets?)|starting soon screens?|mockups?|quilt(ing)?\s*patterns?|flash\s*cards?|(phone|tablet|ipad|desktop)\s*(wallpaper|background)s?|frame tv art|recipes?|fonts?|digital backdrops?|(procreate|photoshop|ps)\s*brush(es)?|brushe?s?:?\s*(procreate|photoshop)|photoshop overlays?|photo overlays?|printable photos?|\bmp3\b|classroom decor|seamless patterns?|\bspells?\b|\brituals?\b|\bkarmic\b|regression|past life|divination|channeling|psychic reading|gift tags?|favor tags?|\blogos?\b|(piano\s*)?sheet music|bridal showers?|welcome signs?|rhinestones?|savings challenge|\ba level\b)\b/i;
 
 function isLikely3DPrintFile(listing: EtsyListing): boolean {
   const haystack = `${listing.title} ${(listing.tags ?? []).join(" ")}`;

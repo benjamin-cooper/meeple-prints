@@ -37,8 +37,13 @@
  */
 export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   Covenant: /halo|vhorlath|darkmoon|xenomorph|prometheus|\balien\b|ark of the covenant|indiana jones|\bneca\b/i,
-  Inferno: /cs:?go|\bcs2\b|\bdante\b|botticelli|fortnite|arcadia quest/i,
-  Recall: /\bhonda\b|\bacura\b|total recall|schwarzenegger|johnny cab|\bquaid\b|heroquest|ultima online|\bnerf\b/i,
+  // "ghost rider" added in the fourth audit -- a Marvel character, same
+  // collision shape as the CS:GO/Dante/Fortnite entries already here.
+  Inferno: /cs:?go|\bcs2\b|\bdante\b|botticelli|fortnite|arcadia quest|ghost rider/i,
+  // "for seniors"/"reminiscing"/"memory care" added in the fourth audit --
+  // senior-care memory-activity printables ("Do You Remember Game
+  // Printable for Seniors, Memory Recall Activity, Reminiscing").
+  Recall: /\bhonda\b|\bacura\b|total recall|schwarzenegger|johnny cab|\bquaid\b|heroquest|ultima online|\bnerf\b|for seniors|reminiscing|memory care/i,
   Lacrimosa: /neverness to everness|\bnte\b|ys viii|\bmozart\b|\brequiem\b|piano (sheet music|lesson)/i,
   "Tag Team": /pokemon go|heroquest|\bwwf\b|funko pop/i,
   "The Anarchy": /sons of anarchy|marvel|spiderpunk/i,
@@ -46,7 +51,12 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   Speakeasy: /murder mystery|speakeasy arms/i,
   Earth: /\bpuzzle\b|topograph|\bcoaster\b|\bglobe\b|\batlas\b|\belemental\b|\bepcot\b|spaceship earth/i,
   Sand: /sand dune|sand castle|\bsandbox\b|kinetic sand|sand mold|sand play|sand scoop|sand dollar|sand ladder|sand jacuzzi|sand filter|sand clock/i,
-  Luthier: /radius block|\bclamps?\b|\bcello\b|headstock|\bc3po\b|nut files?|string spacer/i,
+  // "blueprints? for luthier"/"mayones" added in the fourth audit -- a
+  // recurring Etsy series of paper guitar-building plans/blueprints (2D
+  // PDF plans, not 3D-print files), distinct from the "guitar" theming
+  // deliberately left unexcluded above since the board game itself is
+  // about being a luthier.
+  Luthier: /radius block|\bclamps?\b|\bcello\b|headstock|\bc3po\b|nut files?|string spacer|blueprints? for luthier|\bmayones\b/i,
   "Galileo Galilei": /\bstatue\b|\bbust\b|portachiavi|\bkeychain\b|eppur si muove|\bstencil\b|pendulum clock|\bquadrants?\b|planetario|planetarium/i,
   Forestry: /relascope|angle gauge|densiometer|\bforwarder\b|\btyres?\b|\bdozer\b|\bgrapple\b|half-track|logging (equipment|truck)/i,
   "Black Forest": /schwarzwald|bollenhut|\bmug\b|\bbookmark\b|watermelon|battbox|vapor.*box/i,

@@ -101,8 +101,18 @@ const RESULT_LIMIT = 8;
 // entire pattern (old terms' new plurals + the new terms) against every
 // currently-visible row in both databases: zero risk, and found 24 more
 // already-live matches purely from the plural fixes.
+//
+// Fourth systematic audit (2026-07-30, checking the full hidden set rather
+// than just what happened to be freshly reported): added "classroom
+// decor" (paper classroom decorations), "seamless pattern" (repeating
+// fabric/wallpaper design files, not 3D-print STLs), and a new recurring
+// category -- spiritual/new-age/divination content (spells, rituals,
+// karmic/past-life regression, channeling, psychic readings) -- seen
+// across multiple unrelated games (Recall, Sanctuary, Covenant), not a
+// one-off. Verified against every currently-visible Etsy row in
+// production: zero risk.
 const NON_3D_PRINT_PATTERN =
-  /\b(svg|dxf|glowforge|cricut|laser\s*cut|cross\s*stitch|embroidery|sewing patterns?|vector files?|posters?|wall\s*art|art\s*prints?|clip\s*art|coloring\s*pages?|greeting\s*cards?|invitation\s*templates?|e-?books?|biograph(y|ies)|stud(y|ies)\s*guides?|workbooks?|homeschool|activity books?|planners?|journals?|book covers?|editable|invit(e|ation)s?|sublimation|crochet|knitting|knit|beading|beadwork|canva|digital paper packs?|twitch|obs|streamlabs|vtuber|webcam|stream(ing)?\s*(overlays?|packages?|decorations?|screens?|transitions?|borders?|widgets?)|starting soon screens?|mockups?|quilt(ing)?\s*patterns?|flash\s*cards?|(phone|tablet|ipad|desktop)\s*(wallpaper|background)s?|frame tv art|recipes?|fonts?|digital backdrops?|(procreate|photoshop|ps)\s*brush(es)?|printable photos?|\bmp3\b)\b/i;
+  /\b(svg|dxf|glowforge|cricut|laser\s*cut|cross\s*stitch|embroidery|sewing patterns?|vector files?|posters?|wall\s*art|art\s*prints?|clip\s*art|coloring\s*pages?|greeting\s*cards?|invitation\s*templates?|e-?books?|biograph(y|ies)|stud(y|ies)\s*guides?|workbooks?|homeschool|activity books?|planners?|journals?|book covers?|editable|invit(e|ation)s?|sublimation|crochet|knitting|knit|beading|beadwork|canva|digital paper packs?|twitch|obs|streamlabs|vtuber|webcam|stream(ing)?\s*(overlays?|packages?|decorations?|screens?|transitions?|borders?|widgets?)|starting soon screens?|mockups?|quilt(ing)?\s*patterns?|flash\s*cards?|(phone|tablet|ipad|desktop)\s*(wallpaper|background)s?|frame tv art|recipes?|fonts?|digital backdrops?|(procreate|photoshop|ps)\s*brush(es)?|printable photos?|\bmp3\b|classroom decor|seamless patterns?|\bspells?\b|\brituals?\b|\bkarmic\b|regression|past life|divination|channeling|psychic reading)\b/i;
 
 function isLikely3DPrintFile(listing: EtsyListing): boolean {
   const haystack = `${listing.title} ${(listing.tags ?? []).join(" ")}`;

@@ -36,20 +36,32 @@
  * z-scale model-railway noise, not a real result.
  */
 export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
-  Covenant: /halo|vhorlath|darkmoon|xenomorph|prometheus|\balien\b|ark of the covenant|indiana jones|\bneca\b/i,
-  // "ghost rider" added in the fourth audit -- a Marvel character, same
-  // collision shape as the CS:GO/Dante/Fortnite entries already here.
-  Inferno: /cs:?go|\bcs2\b|\bdante\b|botticelli|fortnite|arcadia quest|ghost rider/i,
-  // "for seniors"/"reminiscing"/"memory care" added in the fourth audit --
-  // senior-care memory-activity printables ("Do You Remember Game
-  // Printable for Seniors, Memory Recall Activity, Reminiscing").
-  Recall: /\bhonda\b|\bacura\b|total recall|schwarzenegger|johnny cab|\bquaid\b|heroquest|ultima online|\bnerf\b|for seniors|reminiscing|memory care/i,
+  // "lds"/"relief society"/"baptismal"/"general conference" added in the
+  // fifth audit -- LDS/Mormon religious-education content ("covenant" is a
+  // significant term in LDS theology), same collision shape as the
+  // religious "Ark of the Covenant" content already excluded here.
+  Covenant: /halo|vhorlath|darkmoon|xenomorph|prometheus|\balien\b|ark of the covenant|indiana jones|\bneca\b|\blds\b|relief society|baptismal|general conference/i,
+  // "kyosho"/"vfc"/"aeg"/"hpa"/"wolverine inferno" added in the fifth audit
+  // -- Kyosho is an RC-car brand with an "Inferno" model line, and
+  // VFC/AEG/HPA/Wolverine are airsoft-gun brands/terminology that all
+  // happen to use "Inferno" as a product name.
+  Inferno: /cs:?go|\bcs2\b|\bdante\b|botticelli|fortnite|arcadia quest|ghost rider|\bkyosho\b|\bvfc\b|\baeg\b|\bhpa\b|wolverine inferno/i,
+  // "dog recall/training"/"active recall" added in the fifth audit -- dog
+  // obedience-training content ("recall" is the actual training term for
+  // a dog returning when called) and "active recall" (a real study
+  // technique, ironic collision with the study-guide content this game
+  // already attracts).
+  Recall: /\bhonda\b|\bacura\b|total recall|schwarzenegger|johnny cab|\bquaid\b|heroquest|ultima online|\bnerf\b|for seniors|reminiscing|memory care|dog (recall|training)|active recall/i,
   Lacrimosa: /neverness to everness|\bnte\b|ys viii|\bmozart\b|\brequiem\b|piano (sheet music|lesson)/i,
   "Tag Team": /pokemon go|heroquest|\bwwf\b|funko pop/i,
   "The Anarchy": /sons of anarchy|marvel|spiderpunk/i,
-  Falling: /under falling skies/i,
+  // "chainsaw man" added in the fifth audit -- an anime franchise.
+  Falling: /under falling skies|chainsaw man/i,
   Speakeasy: /murder mystery|speakeasy arms/i,
-  Earth: /\bpuzzle\b|topograph|\bcoaster\b|\bglobe\b|\batlas\b|\belemental\b|\bepcot\b|spaceship earth/i,
+  // "charred earth"/"earth day"/"happiest place on earth" added in the
+  // fifth audit -- a wargaming terrain term, the environmental holiday,
+  // and the Disney tagline, respectively.
+  Earth: /\bpuzzle\b|topograph|\bcoaster\b|\bglobe\b|\batlas\b|\belemental\b|\bepcot\b|spaceship earth|charred earth|earth day|happiest place on earth/i,
   Sand: /sand dune|sand castle|\bsandbox\b|kinetic sand|sand mold|sand play|sand scoop|sand dollar|sand ladder|sand jacuzzi|sand filter|sand clock/i,
   // "blueprints? for luthier"/"mayones" added in the fourth audit -- a
   // recurring Etsy series of paper guitar-building plans/blueprints (2D
@@ -61,4 +73,29 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   Forestry: /relascope|angle gauge|densiometer|\bforwarder\b|\btyres?\b|\bdozer\b|\bgrapple\b|half-track|logging (equipment|truck)/i,
   "Black Forest": /schwarzwald|bollenhut|\bmug\b|\bbookmark\b|watermelon|battbox|vapor.*box/i,
   Funfair: /z-scale|\bnerf\b|teacup ride|\bcarousel\b|\bkermis\b|tornado carnival|toilet container|beer tent|ride seat/i,
+  // "nerf"/"airsoft"/"league of legends"/"leona"/"kamen rider"/"mu online"/
+  // "voron"/"nike undercover" added in the fifth audit -- Daybreak collides
+  // with an unusually wide spread of unrelated brands/franchises, each
+  // using "Daybreak" as a product/character/model name.
+  Daybreak: /\bnerf\b|airsoft|league of legends|\bleona\b|kamen rider|mu online|\bvoron\b|nike undercover/i,
+  // "a-team"/"scooby"/"doctor who"/"paternoster"/"little rascals"/
+  // "freshies"/"villain gang" added in the fifth audit.
+  "The Gang": /\ba-team\b|\bscooby\b|doctor who|paternoster|little rascals|\bfreshies\b|villain gang/i,
+  // "tyres?/tires?" added in the fifth audit -- Yokohama is a real tire
+  // brand, which turned out to be the dominant collision (Porsche racing
+  // wheels, tire logos), plus travel-guide content for the actual city.
+  Yokohama: /\btyres?\b|\btires?\b|reiseführer|field guide/i,
+  // Fromage collides with its own literal meaning -- French for "cheese" --
+  // so almost everything found for it is real cheese-making equipment/
+  // recipes rather than board-game accessories. Can't exclude on "fromage"
+  // itself (that's the search term), so this keys on the specific
+  // cheese-tool/recipe vocabulary instead.
+  Fromage: /tupperware|\bmoulin\b|\brape\b|\bpresse\b|gâteau|glaçage|\bchevre\b/i,
+  // "cthulhu"/"sisters of battle"/"sky children of (the) light"/
+  // "rocamadour" added in the fifth audit -- Sanctuary's noise is mostly
+  // generic fantasy/sci-fi terrain with no single unifying vocabulary
+  // (unlike Earth/Sand/etc above), so only the identifiable franchise
+  // names could safely be excluded; the rest stays in the unfixable
+  // bucket.
+  Sanctuary: /cthulhu|sisters of battle|sky children of (the )?light|rocamadour/i,
 };

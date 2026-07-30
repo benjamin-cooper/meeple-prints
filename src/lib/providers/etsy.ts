@@ -111,8 +111,17 @@ const RESULT_LIMIT = 8;
 // across multiple unrelated games (Recall, Sanctuary, Covenant), not a
 // one-off. Verified against every currently-visible Etsy row in
 // production: zero risk.
+//
+// Fifth systematic audit (2026-07-30, full pass across every game, not
+// just the top offenders): added "gift tag"/"favor tag" (printable paper
+// party favors -- Tag Team was flooded with these) and bare "logo"
+// (business logo-design listings, a large generic Etsy category that
+// showed up heavily for Forestry -- "Tree Service Truck Logo", "Custom
+// Landscaping Logo" -- but isn't inherently game-specific, so kept generic
+// rather than per-game). Verified against every currently-visible Etsy
+// row: zero risk.
 const NON_3D_PRINT_PATTERN =
-  /\b(svg|dxf|glowforge|cricut|laser\s*cut|cross\s*stitch|embroidery|sewing patterns?|vector files?|posters?|wall\s*art|art\s*prints?|clip\s*art|coloring\s*pages?|greeting\s*cards?|invitation\s*templates?|e-?books?|biograph(y|ies)|stud(y|ies)\s*guides?|workbooks?|homeschool|activity books?|planners?|journals?|book covers?|editable|invit(e|ation)s?|sublimation|crochet|knitting|knit|beading|beadwork|canva|digital paper packs?|twitch|obs|streamlabs|vtuber|webcam|stream(ing)?\s*(overlays?|packages?|decorations?|screens?|transitions?|borders?|widgets?)|starting soon screens?|mockups?|quilt(ing)?\s*patterns?|flash\s*cards?|(phone|tablet|ipad|desktop)\s*(wallpaper|background)s?|frame tv art|recipes?|fonts?|digital backdrops?|(procreate|photoshop|ps)\s*brush(es)?|printable photos?|\bmp3\b|classroom decor|seamless patterns?|\bspells?\b|\brituals?\b|\bkarmic\b|regression|past life|divination|channeling|psychic reading)\b/i;
+  /\b(svg|dxf|glowforge|cricut|laser\s*cut|cross\s*stitch|embroidery|sewing patterns?|vector files?|posters?|wall\s*art|art\s*prints?|clip\s*art|coloring\s*pages?|greeting\s*cards?|invitation\s*templates?|e-?books?|biograph(y|ies)|stud(y|ies)\s*guides?|workbooks?|homeschool|activity books?|planners?|journals?|book covers?|editable|invit(e|ation)s?|sublimation|crochet|knitting|knit|beading|beadwork|canva|digital paper packs?|twitch|obs|streamlabs|vtuber|webcam|stream(ing)?\s*(overlays?|packages?|decorations?|screens?|transitions?|borders?|widgets?)|starting soon screens?|mockups?|quilt(ing)?\s*patterns?|flash\s*cards?|(phone|tablet|ipad|desktop)\s*(wallpaper|background)s?|frame tv art|recipes?|fonts?|digital backdrops?|(procreate|photoshop|ps)\s*brush(es)?|printable photos?|\bmp3\b|classroom decor|seamless patterns?|\bspells?\b|\brituals?\b|\bkarmic\b|regression|past life|divination|channeling|psychic reading|gift tags?|favor tags?|\blogos?\b)\b/i;
 
 function isLikely3DPrintFile(listing: EtsyListing): boolean {
   const haystack = `${listing.title} ${(listing.tags ?? []).join(" ")}`;

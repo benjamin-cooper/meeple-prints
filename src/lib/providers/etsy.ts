@@ -85,8 +85,24 @@ const RESULT_LIMIT = 8;
 // and font files -- same pattern, smaller volume. Checked all of these
 // against every currently-visible row in both databases before adding:
 // zero matches, meaning zero risk to real results.
+//
+// Third systematic audit (2026-07-30): found two more things. First, a
+// genuinely new batch of content-type categories -- photography digital
+// backdrops ("Cosplay Portrait Photography" scenes), Procreate/Photoshop
+// brush packs, tablet/iPad wallpapers, printable travel photography (7
+// separate "Beautiful Lisbon printable photos" listings alone, from the
+// Lisboa/Lisbon collision), and MP3/sheet-music audio downloads. Second,
+// and more valuable long-term: most of the *existing* terms above were
+// singular-only and silently missed their own plural -- \bposter\b doesn't
+// match "Posters" (the trailing "s" breaks the word-boundary check right
+// after "r"), same gap for mockup, wallpaper, and most of the others added
+// across earlier passes. Fixed every term that can legitimately pluralize,
+// not just the one instance that happened to get reported. Re-verified the
+// entire pattern (old terms' new plurals + the new terms) against every
+// currently-visible row in both databases: zero risk, and found 24 more
+// already-live matches purely from the plural fixes.
 const NON_3D_PRINT_PATTERN =
-  /\b(svg|dxf|glowforge|cricut|laser\s*cut|cross\s*stitch|embroidery|sewing pattern|vector file|poster|wall\s*art|art\s*print|clip\s*art|coloring\s*page|greeting\s*card|invitation\s*template|e-?books?|biography|stud(y|ies)\s*guide|workbook|homeschool|activity book|planner|journal|book cover|editable|invit(e|ation)s?|sublimation|crochet|knitting|knit|beading|beadwork|canva|digital paper pack|twitch|obs|streamlabs|vtuber|webcam|stream(ing)?\s*(overlay|package|decoration|screen|transition|border|widget)|starting soon screen|mockup|quilt(ing)?\s*pattern|flash\s*cards?|phone wallpaper|frame tv art|live wallpaper|recipes?|\bfont\b)\b/i;
+  /\b(svg|dxf|glowforge|cricut|laser\s*cut|cross\s*stitch|embroidery|sewing patterns?|vector files?|posters?|wall\s*art|art\s*prints?|clip\s*art|coloring\s*pages?|greeting\s*cards?|invitation\s*templates?|e-?books?|biograph(y|ies)|stud(y|ies)\s*guides?|workbooks?|homeschool|activity books?|planners?|journals?|book covers?|editable|invit(e|ation)s?|sublimation|crochet|knitting|knit|beading|beadwork|canva|digital paper packs?|twitch|obs|streamlabs|vtuber|webcam|stream(ing)?\s*(overlays?|packages?|decorations?|screens?|transitions?|borders?|widgets?)|starting soon screens?|mockups?|quilt(ing)?\s*patterns?|flash\s*cards?|(phone|tablet|ipad|desktop)\s*(wallpaper|background)s?|frame tv art|recipes?|fonts?|digital backdrops?|(procreate|photoshop|ps)\s*brush(es)?|printable photos?|\bmp3\b)\b/i;
 
 function isLikely3DPrintFile(listing: EtsyListing): boolean {
   const haystack = `${listing.title} ${(listing.tags ?? []).join(" ")}`;

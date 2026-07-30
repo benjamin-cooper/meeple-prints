@@ -11,6 +11,7 @@ import { searchAllProviders } from "@/lib/providers";
 import { getProviderCredentials } from "@/lib/providers/env-credentials";
 import { guessTypeFromTitle } from "@/lib/providers/guess-type";
 import { findDuplicateIndices } from "@/lib/providers/dedupe";
+import { KNOWN_COLLISION_EXCLUSIONS } from "@/lib/providers/known-collisions";
 import { MISC_GAME_BGG_ID } from "@/lib/constants";
 
 /**
@@ -116,7 +117,17 @@ export async function scanGame(
   game: { id: number; name: string; bggId: number },
   options?: { queries?: { term: string; extraFilter: ((title: string) => boolean) | null }[] }
 ) {
-  const queries = options?.queries ?? [{ term: game.name, extraFilter: null }];
+  // A regular game's default (single, bare-name) query applies its known-
+  // collision exclusion here if it has one (see known-collisions.ts) --
+  // options.queries (the Miscellaneous game's curated term list) already
+  // carries its own per-term filters and isn't touched by this.
+  const collisionExclusion = KNOWN_COLLISION_EXCLUSIONS[game.name];
+  const queries = options?.queries ?? [
+    {
+      term: game.name,
+      extraFilter: collisionExclusion ? (title: string) => !collisionExclusion.test(title) : null,
+    },
+  ];
   const creds = getProviderCredentials();
 
   // Multiple queries (the miscellaneous game's curated term list) get

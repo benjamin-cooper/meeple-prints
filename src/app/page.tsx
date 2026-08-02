@@ -455,13 +455,31 @@ export default function CatalogPage() {
       {filtered.length > 0 && view === "marketplace" && (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-            {visibleItems.map((item) =>
-              item.kind === "saved" ? (
-                <ProductCard key={`p-${item.id}`} product={item} onClick={() => openEdit(item)} onStatusChange={upsertLocal} />
+            {visibleItems.map((item, i) => {
+              // Modulo, not raw index -- each "Load more" page gets its own
+              // quick stagger cycle instead of the delay growing without
+              // bound the further down the grid a card sits. Capped so a
+              // long page's tail doesn't drag the entrance out.
+              const delayMs = Math.min(i % PAGE_SIZE, 24) * 12;
+              return item.kind === "saved" ? (
+                <ProductCard
+                  key={`p-${item.id}`}
+                  product={item}
+                  onClick={() => openEdit(item)}
+                  onStatusChange={upsertLocal}
+                  animationDelayMs={delayMs}
+                />
               ) : (
-                <DiscoveredPrintCard key={`d-${item.id}`} item={item} now={now} onSaved={upsertLocal} onHidden={hideDiscovered} />
-              )
-            )}
+                <DiscoveredPrintCard
+                  key={`d-${item.id}`}
+                  item={item}
+                  now={now}
+                  onSaved={upsertLocal}
+                  onHidden={hideDiscovered}
+                  animationDelayMs={delayMs}
+                />
+              );
+            })}
           </div>
           {hasMore && (
             <div className="flex justify-center pt-2">

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -248,10 +247,10 @@ export default function ConnectPage() {
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-semibold">Your collection</p>
               <span className={cn(
-                "inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full",
-                isStale ? "bg-destructive/10 text-destructive" : "bg-status-printed/15 text-status-printed"
+                "inline-flex items-center gap-1.5 text-[11px] font-mono font-semibold uppercase tracking-wide px-2 py-0.5 rounded-sm border",
+                isStale ? "border-destructive/30 text-destructive bg-destructive/5" : "border-status-printed/30 text-status-printed bg-status-printed/5"
               )}>
-                {isStale ? <X className="size-3" /> : <Check className="size-3" />}
+                <span className={cn("size-1.5 rounded-full", isStale ? "bg-destructive animate-pulse" : "bg-status-printed")} />
                 {isStale ? "Stale" : "Up to date"}
               </span>
             </div>
@@ -279,10 +278,10 @@ export default function ConnectPage() {
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-semibold">Auto-scan</p>
               <span className={cn(
-                "inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full",
-                isStale ? "bg-destructive/10 text-destructive" : "bg-status-printed/15 text-status-printed"
+                "inline-flex items-center gap-1.5 text-[11px] font-mono font-semibold uppercase tracking-wide px-2 py-0.5 rounded-sm border",
+                isStale ? "border-destructive/30 text-destructive bg-destructive/5" : "border-status-printed/30 text-status-printed bg-status-printed/5"
               )}>
-                {isStale ? <X className="size-3" /> : <Check className="size-3" />}
+                <span className={cn("size-1.5 rounded-full", isStale ? "bg-destructive animate-pulse" : "bg-status-printed")} />
                 {isStale ? "Not running" : "Running"}
               </span>
             </div>
@@ -313,10 +312,10 @@ export default function ConnectPage() {
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm font-semibold">{p.label}</span>
                 <span className={cn(
-                  "inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full",
-                  p.configured ? "bg-status-printed/15 text-status-printed" : "bg-muted text-muted-foreground"
+                  "inline-flex items-center gap-1.5 text-[11px] font-mono font-semibold uppercase tracking-wide px-2 py-0.5 rounded-sm border",
+                  p.configured ? "border-status-printed/30 text-status-printed bg-status-printed/5" : "border-border text-muted-foreground bg-muted/40"
                 )}>
-                  {p.configured ? <Check className="size-3" /> : <X className="size-3" />}
+                  <span className={cn("size-1.5 rounded-full", p.configured ? "bg-status-printed" : "bg-muted-foreground")} />
                   {p.configured ? "Configured" : "Not Configured"}
                 </span>
               </div>

@@ -7,7 +7,7 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RatingRow } from "@/components/rating-row";
 import { typeLabel } from "@/lib/constants";
-import { timeAgo } from "@/lib/utils";
+import { timeAgo, cn } from "@/lib/utils";
 import type { DiscoveredPrint, Product } from "@/lib/types";
 
 /** A cached, not-yet-saved search hit shown in Catalog. Saving promotes it into a real Product. */
@@ -16,11 +16,14 @@ export function DiscoveredPrintCard({
   now,
   onSaved,
   onHidden,
+  animationDelayMs,
 }: {
   item: DiscoveredPrint;
   now: number | null;
   onSaved: (product: Product) => void;
   onHidden: (id: number) => void;
+  /** Staggers this card's entrance animation relative to its grid siblings. */
+  animationDelayMs?: number;
 }) {
   const [saving, setSaving] = useState(false);
   const [hiding, setHiding] = useState(false);
@@ -77,7 +80,10 @@ export function DiscoveredPrintCard({
   };
 
   return (
-    <div className="relative flex flex-col rounded-lg border border-dashed border-border bg-card overflow-hidden">
+    <div
+      className="card-enter tick-corners relative flex flex-col rounded-lg border border-dashed border-border bg-card overflow-hidden"
+      style={animationDelayMs ? { animationDelay: `${animationDelayMs}ms` } : undefined}
+    >
       <a href={item.url} target="_blank" rel="noopener noreferrer" className="relative aspect-[4/3] bg-muted block">
         {item.thumbnailUrl ? (
           <Image src={item.thumbnailUrl} alt="" fill className="object-cover" unoptimized />
@@ -111,7 +117,11 @@ export function DiscoveredPrintCard({
         </span>
 
         <div className="mt-auto pt-2 flex items-center justify-between gap-2">
-          <span className="font-mono text-xs font-medium text-status-printed">
+          {/* A filament-spool color chip, echoing the status palette's own
+              swatch-not-label logic (see globals.css) instead of leaving
+              the price as plain text. */}
+          <span className="inline-flex items-center gap-1.5 font-mono text-xs font-medium">
+            <span className={cn("size-2 rounded-full", item.isFree ? "bg-status-printed" : "bg-primary")} />
             {item.isFree ? "Free" : item.price != null ? `$${item.price.toFixed(2)}` : "—"}
           </span>
           <Button size="sm" disabled={saving} onClick={handleSave}>

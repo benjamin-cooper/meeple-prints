@@ -12,10 +12,13 @@ export function ProductCard({
   product,
   onClick,
   onStatusChange,
+  animationDelayMs,
 }: {
   product: Product;
   onClick: () => void;
   onStatusChange: (p: Product) => void;
+  /** Staggers this card's entrance animation relative to its grid siblings. */
+  animationDelayMs?: number;
 }) {
   const tags: string[] = product.tags ? JSON.parse(product.tags) : [];
 
@@ -29,7 +32,8 @@ export function ProductCard({
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); }
       }}
-      className="group flex flex-col rounded-lg border border-border bg-card overflow-hidden hover:border-primary/60 hover:shadow-sm transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      style={animationDelayMs ? { animationDelay: `${animationDelayMs}ms` } : undefined}
+      className="card-enter tick-corners group flex flex-col rounded-lg border border-border bg-card overflow-hidden hover:border-primary/60 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <div className="relative aspect-[4/3] bg-muted">
         {product.thumbnailUrl ? (
@@ -71,10 +75,8 @@ export function ProductCard({
 
         <div className="mt-auto pt-2 flex items-center justify-between gap-2">
           <StatusQuickSelect product={product} onChanged={onStatusChange} />
-          <span className={cn(
-            "font-mono text-xs font-medium",
-            product.isFree ? "text-status-printed" : "text-foreground"
-          )}>
+          <span className="inline-flex items-center gap-1.5 font-mono text-xs font-medium">
+            <span className={cn("size-2 rounded-full", product.isFree ? "bg-status-printed" : "bg-primary")} />
             {product.isFree ? "Free" : product.price != null ? `$${product.price.toFixed(2)}` : "—"}
           </span>
         </div>

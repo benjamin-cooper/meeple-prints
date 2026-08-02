@@ -122,6 +122,73 @@
   background-position: -1px -1px;
 }
 
+/* The same cutting-mat grid as .bed-grid, but faint and fixed to the
+   viewport for the whole page shell instead of one isolated block --
+   makes the "workshop surface" the background color already implies
+   literal instead of just implied by the color name. Fixed attachment so
+   it reads as the desk under the page, not part of the scrolling content. */
+.workshop-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--border) 22%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--border) 22%, transparent) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-attachment: fixed;
+}
+
+/* Registration-mark corners, like a technical drawing or a caliper closing
+   on a part -- revealed on hover/focus rather than always-on, so it reads
+   as an interaction cue, not decoration. Positioned just inside the border
+   rather than straddling it, since the parent needs overflow-hidden for
+   its own rounded image corners. */
+.tick-corners {
+  position: relative;
+}
+.tick-corners::before,
+.tick-corners::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+.tick-corners::before {
+  top: 4px;
+  left: 4px;
+  border-top: 2px solid var(--primary);
+  border-left: 2px solid var(--primary);
+}
+.tick-corners::after {
+  bottom: 4px;
+  right: 4px;
+  border-bottom: 2px solid var(--primary);
+  border-right: 2px solid var(--primary);
+}
+.tick-corners:hover::before,
+.tick-corners:hover::after,
+.tick-corners:focus-visible::before,
+.tick-corners:focus-visible::after {
+  opacity: 1;
+}
+
+/* Staggered card entrance -- animation-delay set per-card via inline style.
+   `both` fill-mode holds the pre-animation state during the delay instead
+   of flashing full-opacity before it starts. */
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.card-enter {
+  animation: card-enter 0.35s ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

@@ -133,8 +133,17 @@ const RESULT_LIMIT = 8;
 // Lacrimosa-specific), "bridal shower", "welcome sign", "rhinestone",
 // "savings challenge", and "A Level" (UK exam-board content, seen
 // recurring across both Recall and Entropy).
+//
+// Seventh systematic audit (2026-08-02): added Lightroom presets, stock
+// photos, a general "challenge tracker" (broader than just "savings
+// challenge" -- habit/fitness trackers like "75 Hard Challenge Tracker"),
+// subliminal/astral content (same spiritual/new-age category as the
+// fourth audit's spell/ritual/karmic terms), "party sign", and promoted
+// LDS/Bible content from Covenant-specific to generic after it showed up
+// on a second, unrelated game (Flip 7's "Nehemiah Flip Chart...Bible
+// Story Printable, LDS Come Follow Me").
 const NON_3D_PRINT_PATTERN =
-  /\b(svg|dxf|glowforge|cricut|laser\s*cut|cross\s*stitch|embroidery|sewing patterns?|vector files?|posters?|wall\s*art|art\s*prints?|clip\s*art|coloring\s*pages?|coloring\s*books?|greeting\s*cards?|invitation\s*templates?|e-?books?|biograph(y|ies)|stud(y|ies)\s*guides?|workbooks?|homeschool|activity books?|planners?|journals?|book covers?|editable|invit(e|ation)s?|sublimation|crochet|knitting|knit|beading|beadwork|canva|digital papers?( packs?)?|twitch|obs|streamlabs|vtuber|webcam|stream(ing)?\s*(overlays?|packages?|decorations?|screens?|transitions?|borders?|widgets?)|starting soon screens?|mockups?|quilt(ing)?\s*patterns?|flash\s*cards?|(phone|tablet|ipad|desktop)\s*(wallpaper|background)s?|frame tv art|recipes?|fonts?|digital backdrops?|(procreate|photoshop|ps)\s*brush(es)?|brushe?s?:?\s*(procreate|photoshop)|photoshop overlays?|photo overlays?|printable photos?|\bmp3\b|classroom decor|seamless patterns?|\bspells?\b|\brituals?\b|\bkarmic\b|regression|past life|divination|channeling|psychic reading|gift tags?|favor tags?|\blogos?\b|(piano\s*)?sheet music|bridal showers?|welcome signs?|rhinestones?|savings challenge|\ba level\b)\b/i;
+  /\b(svg|dxf|glowforge|cricut|laser\s*cut|cross\s*stitch|embroidery|sewing patterns?|vector files?|posters?|wall\s*art|art\s*prints?|clip\s*art|coloring\s*pages?|coloring\s*books?|greeting\s*cards?|invitation\s*templates?|e-?books?|biograph(y|ies)|stud(y|ies)\s*guides?|workbooks?|homeschool|activity books?|planners?|journals?|book covers?|editable|invit(e|ation)s?|sublimation|crochet|knitting|knit|beading|beadwork|canva|digital papers?( packs?)?|twitch|obs|streamlabs|vtuber|webcam|stream(ing)?\s*(overlays?|packages?|decorations?|screens?|transitions?|borders?|widgets?)|starting soon screens?|mockups?|quilt(ing)?\s*patterns?|flash\s*cards?|(phone|tablet|ipad|desktop)\s*(wallpaper|background)s?|frame tv art|recipes?|fonts?|digital backdrops?|(procreate|photoshop|ps)\s*brush(es)?|brushe?s?:?\s*(procreate|photoshop)|photoshop overlays?|photo overlays?|printable photos?|\bmp3\b|classroom decor|seamless patterns?|\bspells?\b|\brituals?\b|\bkarmic\b|regression|past life|divination|channeling|psychic reading|gift tags?|favor tags?|\blogos?\b|(piano\s*)?sheet music|bridal showers?|welcome signs?|rhinestones?|savings challenge|\ba level\b|lightroom presets?|stock photos?|challenge trackers?|\blds\b|bible stor(y|ies)|come follow me|subliminal|\bastral\b|party signs?)\b/i;
 
 function isLikely3DPrintFile(listing: EtsyListing): boolean {
   const haystack = `${listing.title} ${(listing.tags ?? []).join(" ")}`;

@@ -45,7 +45,10 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // -- Kyosho is an RC-car brand with an "Inferno" model line, and
   // VFC/AEG/HPA/Wolverine are airsoft-gun brands/terminology that all
   // happen to use "Inferno" as a product name.
-  Inferno: /cs:?go|\bcs2\b|\bdante\b|botticelli|fortnite|arcadia quest|ghost rider|\bkyosho\b|\bvfc\b|\baeg\b|\bhpa\b|wolverine inferno/i,
+  // "tcg binder"/"tcg display" added in the seventh audit -- a Magic: The
+  // Gathering card named "Inferno" showing up in trading-card-storage
+  // listings, flat card-binder products rather than 3D-print files.
+  Inferno: /cs:?go|\bcs2\b|\bdante\b|botticelli|fortnite|arcadia quest|ghost rider|\bkyosho\b|\bvfc\b|\baeg\b|\bhpa\b|wolverine inferno|tcg binder|tcg display/i,
   // "dog recall/training"/"active recall" added in the fifth audit -- dog
   // obedience-training content ("recall" is the actual training term for
   // a dog returning when called) and "active recall" (a real study
@@ -66,12 +69,14 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // and the Disney tagline, respectively.
   Earth: /\bpuzzle\b|topograph|\bcoaster\b|\bglobe\b|\batlas\b|\belemental\b|\bepcot\b|spaceship earth|charred earth|earth day|happiest place on earth/i,
   Sand: /sand dune|sand castle|\bsandbox\b|kinetic sand|sand mold|sand play|sand scoop|sand dollar|sand ladder|sand jacuzzi|sand filter|sand clock/i,
-  // "blueprints? for luthier"/"mayones" added in the fourth audit -- a
-  // recurring Etsy series of paper guitar-building plans/blueprints (2D
-  // PDF plans, not 3D-print files), distinct from the "guitar" theming
+  // "blueprints? for luthier"/"mayones" added in the fourth audit, "luthier
+  // plans" added in the seventh (same recurring Etsy series, just phrased
+  // "Luthier Plans...Blueprint" instead of "Blueprints for luthier") -- a
+  // recurring series of paper guitar-building plans/blueprints (2D PDF
+  // plans, not 3D-print files), distinct from the "guitar" theming
   // deliberately left unexcluded above since the board game itself is
   // about being a luthier.
-  Luthier: /radius block|\bclamps?\b|\bcello\b|headstock|\bc3po\b|nut files?|string spacer|blueprints? for luthier|\bmayones\b/i,
+  Luthier: /radius block|\bclamps?\b|\bcello\b|headstock|\bc3po\b|nut files?|string spacer|blueprints? for luthier|luthier plans|\bmayones\b/i,
   "Galileo Galilei": /\bstatue\b|\bbust\b|portachiavi|\bkeychain\b|eppur si muove|\bstencil\b|pendulum clock|\bquadrants?\b|planetario|planetarium/i,
   Forestry: /relascope|angle gauge|densiometer|\bforwarder\b|\btyres?\b|\bdozer\b|\bgrapple\b|half-track|logging (equipment|truck)/i,
   "Black Forest": /schwarzwald|bollenhut|\bmug\b|\bbookmark\b|watermelon|battbox|vapor.*box/i,

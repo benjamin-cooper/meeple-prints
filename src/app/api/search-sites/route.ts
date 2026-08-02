@@ -8,13 +8,15 @@
  */
 import { scanGame } from "@/lib/scan";
 import { prisma } from "@/lib/prisma";
+import { parseJsonBody } from "@/lib/api-utils";
 import { MISC_GAME_BGG_ID } from "@/lib/constants";
 import { MISC_SEARCH_TERMS } from "@/lib/providers/misc-terms";
 import type { NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
-  const { gameId } = await request.json();
-  const id = Number(gameId);
+  const body = await parseJsonBody<{ gameId?: number }>(request);
+  if (!body) return Response.json({ error: "Invalid request body." }, { status: 400 });
+  const id = Number(body.gameId);
   if (!id) return Response.json({ error: "gameId is required." }, { status: 400 });
 
   const game = await prisma.game.findUnique({ where: { id } });

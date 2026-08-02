@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { parseJsonBody } from "@/lib/api-utils";
 import type { NextRequest } from "next/server";
 
 export async function GET() {
@@ -9,14 +10,37 @@ export async function GET() {
   return Response.json(products);
 }
 
+interface SaveProductBody {
+  url?: string;
+  title?: string;
+  description?: string;
+  thumbnailUrl?: string;
+  domain?: string;
+  siteName?: string;
+  type?: string;
+  creator?: string;
+  price?: number | string | null;
+  currency?: string;
+  isFree?: boolean;
+  status?: string;
+  rating?: number | null;
+  notes?: string;
+  tags?: string[];
+  siteRating?: number | null;
+  siteRatingCount?: number | null;
+  siteLikesCount?: number | null;
+  gameIds?: number[];
+}
+
 export async function POST(request: NextRequest) {
-  const body = await request.json();
+  const body = await parseJsonBody<SaveProductBody>(request);
+  if (!body) return Response.json({ error: "Invalid request body." }, { status: 400 });
   const {
     url, title, description, thumbnailUrl, domain, siteName,
     type, creator, price, currency, isFree, status, rating, notes, tags,
     siteRating, siteRatingCount, siteLikesCount,
     gameIds,
-  } = body ?? {};
+  } = body;
 
   if (!url || !title || !domain) {
     return Response.json({ error: "url, title, and domain are required." }, { status: 400 });

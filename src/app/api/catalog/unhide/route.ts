@@ -6,11 +6,13 @@
  */
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { parseJsonBody } from "@/lib/api-utils";
 import type { NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
-  const { id } = await request.json();
-  const printId = Number(id);
+  const body = await parseJsonBody<{ id?: number }>(request);
+  if (!body) return Response.json({ error: "Invalid request body." }, { status: 400 });
+  const printId = Number(body.id);
   if (!printId) return Response.json({ error: "id is required." }, { status: 400 });
 
   try {

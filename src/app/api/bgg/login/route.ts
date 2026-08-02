@@ -5,10 +5,13 @@
  */
 import { bggLogin } from "@/lib/bgg";
 import { prisma } from "@/lib/prisma";
+import { parseJsonBody } from "@/lib/api-utils";
 import type { NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
-  const { username, password } = await request.json();
+  const body = await parseJsonBody<{ username?: string; password?: string }>(request);
+  if (!body) return Response.json({ error: "Invalid request body." }, { status: 400 });
+  const { username, password } = body;
   if (!username || !password) {
     return Response.json({ error: "Username and password are required." }, { status: 400 });
   }

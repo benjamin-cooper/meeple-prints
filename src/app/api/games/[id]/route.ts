@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { parseJsonBody } from "@/lib/api-utils";
 import type { NextRequest } from "next/server";
 
 type Params = { params: Promise<{ id: string }> };
@@ -15,7 +16,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   const gameId = parseInt(id);
   if (isNaN(gameId)) return Response.json({ error: "Invalid id" }, { status: 400 });
 
-  const body = await request.json();
+  const body = await parseJsonBody<{ inCollection?: boolean }>(request);
   if (typeof body?.inCollection !== "boolean") {
     return Response.json({ error: "inCollection (boolean) is required." }, { status: 400 });
   }
@@ -46,11 +47,15 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
   });
   if (!game) return Response.json({ error: "Not found" }, { status: 404 });
 
+  // Both deletes in one transaction -- otherwise a failure between them
+  // (a dropped connection, a timeout) could leave the game deleted with its
+  // solo products still present, or the reverse, neither of which matches
+  // what the caller asked for.
   const soloProductIds = game.products.filter((p) => p.games.length === 1).map((p) => p.id);
-  if (soloProductIds.length) {
-    await prisma.product.deleteMany({ where: { id: { in: soloProductIds } } });
-  }
-  await prisma.game.delete({ where: { id: gameId } });
+  await prisma.$transaction([
+    ...(soloProductIds.length ? [prisma.product.deleteMany({ where: { id: { in: soloProductIds } } })] : []),
+    prisma.game.delete({ where: { id: gameId } }),
+  ]);
 
   return Response.json({ ok: true, deletedProducts: soloProductIds.length });
 }

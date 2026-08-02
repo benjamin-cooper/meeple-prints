@@ -1,8 +1,11 @@
 import { unfurlUrl } from "@/lib/unfurl";
+import { parseJsonBody } from "@/lib/api-utils";
 import type { NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
-  const { url } = await request.json();
+  const body = await parseJsonBody<{ url?: string }>(request);
+  if (!body) return Response.json({ error: "Invalid request body." }, { status: 400 });
+  const { url } = body;
   if (!url || typeof url !== "string") {
     return Response.json({ error: "A URL is required." }, { status: 400 });
   }

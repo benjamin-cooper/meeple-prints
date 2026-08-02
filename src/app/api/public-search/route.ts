@@ -9,6 +9,7 @@
 import { searchAllProviders } from "@/lib/providers";
 import { getProviderCredentials } from "@/lib/providers/env-credentials";
 import { isRateLimited } from "@/lib/rate-limit";
+import { parseJsonBody } from "@/lib/api-utils";
 import type { NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -17,7 +18,9 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Too many searches. Try again later." }, { status: 429 });
   }
 
-  const { query } = await request.json();
+  const body = await parseJsonBody<{ query?: string }>(request);
+  if (!body) return Response.json({ error: "Invalid request body." }, { status: 400 });
+  const { query } = body;
   if (!query || typeof query !== "string" || !query.trim()) {
     return Response.json({ error: "A search query is required." }, { status: 400 });
   }

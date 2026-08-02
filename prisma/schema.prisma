@@ -82,6 +82,11 @@ model DiscoveredPrint {
   lastSeenAt   DateTime @updatedAt
 
   @@unique([gameId, url])
+  // Backs GET /api/catalog's core query (findMany hidden:false, ordered by
+  // firstSeenAt) -- runs on every Catalog page load against a table that
+  // grows daily via the scheduled full-scan, so this needs to be an index
+  // scan, not a full table scan, as it keeps growing.
+  @@index([hidden, firstSeenAt])
 }
 
 // Single-row settings for the connected BGG collection. This is a personal,

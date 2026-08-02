@@ -1,4 +1,6 @@
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { parseJsonBody } from "@/lib/api-utils";
 import type { NextRequest } from "next/server";
 
 type Params = { params: Promise<{ id: string }> };
@@ -8,11 +10,12 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   const productId = parseInt(id);
   if (isNaN(productId)) return Response.json({ error: "Invalid id" }, { status: 400 });
 
-  const body = await request.json();
+  const body = await parseJsonBody(request);
+  if (!body) return Response.json({ error: "Invalid request body." }, { status: 400 });
   const {
     title, description, thumbnailUrl, type, creator,
     price, currency, isFree, status, rating, notes, tags, gameIds,
-  } = body ?? {};
+  } = body;
 
   const data: Record<string, unknown> = {};
   if (title !== undefined) data.title = title;
@@ -46,6 +49,13 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
   const productId = parseInt(id);
   if (isNaN(productId)) return Response.json({ error: "Invalid id" }, { status: 400 });
 
-  await prisma.product.delete({ where: { id: productId } });
+  try {
+    await prisma.product.delete({ where: { id: productId } });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
+      return Response.json({ error: "That product doesn't exist." }, { status: 404 });
+    }
+    throw err;
+  }
   return Response.json({ ok: true });
 }

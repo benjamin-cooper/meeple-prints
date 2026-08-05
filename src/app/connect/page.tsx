@@ -26,7 +26,7 @@ interface Settings {
 interface DroppedGame {
   id: number;
   name: string;
-  productCount: number;
+  deletedProductCount: number;
 }
 
 const CRON_STALE_AFTER_MS = 30 * 60 * 60 * 1000; // 30h -- a day plus a buffer for a slow run
@@ -332,17 +332,20 @@ export default function ConnectPage() {
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              These are kept, not deleted, by default -- any prints saved against them stay safe. Check any you
-              want gone permanently, prints and all.
+              Any prints saved only for these were already removed -- a print also saved for another game
+              was kept. The games themselves are still here in case one comes back later; check any you
+              want gone for good.
             </p>
             <div className="border border-border rounded-lg divide-y divide-border max-h-64 overflow-y-auto">
               {droppedGames.map((g) => (
                 <label key={g.id} className="flex items-center gap-2.5 px-3 py-2 cursor-pointer hover:bg-secondary text-sm">
                   <Checkbox checked={selectedDropped.has(g.id)} onCheckedChange={() => toggleDropped(g.id)} />
                   <span className="flex-1 truncate">{g.name}</span>
-                  <span className="text-xs text-muted-foreground shrink-0">
-                    {g.productCount} print{g.productCount === 1 ? "" : "s"}
-                  </span>
+                  {g.deletedProductCount > 0 && (
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {g.deletedProductCount} print{g.deletedProductCount === 1 ? "" : "s"} removed
+                    </span>
+                  )}
                 </label>
               ))}
             </div>

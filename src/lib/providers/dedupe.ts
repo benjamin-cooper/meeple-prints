@@ -31,7 +31,22 @@ const SIMILARITY_THRESHOLD = 0.85;
 // file's own threshold comment warns about ("Bitoku Game Organizer WITH
 // EXPANSION" vs "...(no expansion)" -- genuinely opposite variants) is
 // unaffected and still correctly scores low.
-const SYNONYMS: Record<string, string> = { without: "no" };
+//
+// "insert" and "organizer" are used as pure synonyms throughout this
+// entire corpus -- unlike "Deluxe"/"Retail"/"2nd Edition", which are real,
+// non-interchangeable edition differences, "Insert" and "Organizer" never
+// distinguish two different physical products in practice, only which
+// word a given site/creator happened to prefer for the exact same category
+// of thing. Auditing the near-miss band (0.5-0.849 Jaccard, after the
+// included-clause fix above) found this as the single largest remaining
+// pattern: "Lost Ruins of Arnak Organizer" / "...insert organizer", "River
+// of Gold Insert" / "...organizer / insert", several more, all genuine
+// duplicates sitting at 0.80-0.83 purely because of this one word.
+// Confirmed this doesn't reopen the file's own documented false-merge
+// risk: "Ark Nova Insert" vs "Ark Nova Deluxe Insert" still scores 0.75
+// with this synonym in place, since "Deluxe" (the actual differentiator)
+// is untouched.
+const SYNONYMS: Record<string, string> = { without: "no", insert: "organizer" };
 
 // A trailing "inc./incl./including ..." clause almost always just lists
 // bonus bundled content on top of the same base listing ("Captain Flip

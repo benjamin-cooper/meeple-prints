@@ -66,8 +66,11 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   Speakeasy: /murder mystery|speakeasy arms/i,
   // "charred earth"/"earth day"/"happiest place on earth" added in the
   // fifth audit -- a wargaming terrain term, the environmental holiday,
-  // and the Disney tagline, respectively.
-  Earth: /\bpuzzle\b|topograph|\bcoaster\b|\bglobe\b|\batlas\b|\belemental\b|\bepcot\b|spaceship earth|charred earth|earth day|happiest place on earth/i,
+  // and the Disney tagline, respectively. Broadened to bare "disney(land)"
+  // in the eighth audit after a second, differently-worded Disney tagline
+  // ("Most Magical Place on Earth") showed up -- chasing each individual
+  // tagline wasn't going to keep up with Disney's own marketing copy.
+  Earth: /\bpuzzle\b|topograph|\bcoaster\b|\bglobe\b|\batlas\b|\belemental\b|\bepcot\b|spaceship earth|charred earth|earth day|happiest place on earth|disney(land)?/i,
   Sand: /sand dune|sand castle|\bsandbox\b|kinetic sand|sand mold|sand play|sand scoop|sand dollar|sand ladder|sand jacuzzi|sand filter|sand clock/i,
   // "blueprints? for luthier"/"mayones" added in the fourth audit, "luthier
   // plans" added in the seventh (same recurring Etsy series, just phrased
@@ -114,4 +117,26 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // brand, a fantasy miniature series called "Vessel of Entropy", and
   // "Entropy: Zero", a Half-Life fan mod).
   Entropy: /milled in aluminum|step files|t-s diagram|enthalpy|vessel of entropy|entropy zero|arnoz brain board|entropy cannon|entropy razors|falling entropy/i,
+  // Added in the eighth audit -- a psychology/psychoanalysis game name
+  // collision, structurally identical to Galileo Galilei/Recall/etc:
+  // "Unconscious Mind" is a real psychology concept, so Etsy surfaces
+  // genuine Freud/Jung study content on name alone. The board game's own
+  // real results are consistently Insert/Organizer/Tray-worded, checked
+  // against all 20 currently-visible rows before adding.
+  "Unconscious Mind": /\bfreud\b|\bjung\b|psychoanalysis|psychodynamic/i,
+  // Added in the eighth audit -- "Toy Battle" is generic enough that Etsy/
+  // Thingiverse return literal toy-weapon replicas and unrelated character
+  // props on name alone (a Marvel "Thor" prop, a "Toy car"). Narrower than
+  // most entries here since only 4 rows exist total for this game so far.
+  "Toy Battle": /\bthor\b|toy cars?/i,
+  // Added in the eighth audit -- "Ruins" collides with the entire
+  // wargaming-terrain genre (a real, extremely common terrain category
+  // name), so this game has zero currently-correct results, same as Sand/
+  // Falling/Entropy. "Ulvheim" and "Citadel" are the only two
+  // identifiable, safely-excludable brand names in the noise (a specific
+  // terrain product line and Games Workshop's own miniatures brand,
+  // respectively) -- the rest is generic fantasy/wargaming terrain with no
+  // single unifying vocabulary to key off of, same as Sanctuary's
+  // unfixable remainder.
+  Ruins: /\bulvheim\b|\bcitadel\b/i,
 };

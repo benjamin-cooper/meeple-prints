@@ -32,8 +32,8 @@
  * single regex once at module load (see NON_3D_PRINT_PATTERN below) --
  * this only changes how the list is maintained, not the runtime check.
  * Every term here was verified against every currently-visible row in both
- * databases before being added, across seven systematic audits
- * (2026-07-21 through 2026-08-02) -- zero false-positive risk confirmed
+ * databases before being added, across eight systematic audits
+ * (2026-07-21 through 2026-08-11) -- zero false-positive risk confirmed
  * live each time, not assumed.
  */
 interface ExclusionGroup {
@@ -113,6 +113,14 @@ export const NON_3D_PRINT_TERM_GROUPS: ExclusionGroup[] = [
   {
     category: "religious (LDS/Bible) education content",
     terms: ["\\blds\\b", "bible stor(y|ies)", "come follow me"],
+  },
+  {
+    category: "digital battlemaps / VTT (virtual tabletop) maps",
+    terms: ["battlemaps?", "\\bvtt\\b"],
+  },
+  {
+    category: "apparel screen-printing industry (DTF transfer sheets)",
+    terms: ["gang sheets?", "\\bdtf\\b"],
   },
 ];
 

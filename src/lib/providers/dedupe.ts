@@ -33,9 +33,49 @@ const SIMILARITY_THRESHOLD = 0.85;
 // unaffected and still correctly scores low.
 const SYNONYMS: Record<string, string> = { without: "no" };
 
+// A trailing "inc./incl./including ..." clause almost always just lists
+// bonus bundled content on top of the same base listing ("Captain Flip
+// Insert/Organizer inc. Case W0lf cointray, Super Rookie Tileframes...",
+// "Civolution (incl. expansion) - Organizer") -- confirmed live, both
+// scored well under threshold (0.35-0.5) against the plain version of the
+// same listing purely because of how many extra words that clause adds,
+// not because it's a different product. Deliberately scoped to "inc./
+// incl./including" specifically rather than a general "shorter title is a
+// subset of the longer one" rule -- a subset check would also wrongly
+// merge this file's own "Ark Nova Insert" vs "Ark Nova Deluxe Insert"
+// counter-example ({ark,nova,insert} is a literal subset of {ark,nova,
+// deluxe,insert}), since "Deluxe" isn't introduced by an inclusion-marker
+// word and is a real, non-interchangeable edition difference. Checked:
+// this strips the parenthetical form and the bare trailing-clause form
+// without touching "Deluxe" at all -- that pair still scores 0.75, still
+// correctly under threshold.
+const PARENTHETICAL_INCLUDED_CLAUSE = /\s*\((incl?\.?|including)\b[^)]*\)/gi;
+const BARE_TRAILING_INCLUDED_CLAUSE = /\s+(incl?\.?|including)\b.*$/i;
+
+// The bare (non-parenthetical) trailing form strips everything from the
+// marker to the end of the string, which is only safe if a type word
+// already appears *before* it -- otherwise the marker could be the only
+// thing separating the game name from the one word that says what kind of
+// product this even is. Confirmed live: "Clank! Catacombs inc Lairs
+// Expansion Insert" would otherwise lose "Insert" itself (it comes after
+// "inc", not before) and wrongly match an equally bare, type-less "Clank!
+// Catacombs" listing of unverified type -- a real false-merge risk, not a
+// hypothetical one. The parenthetical form doesn't need this guard: a
+// self-contained bracketed aside never removes the main clause's own words.
+const TYPE_WORD = /\b(insert|organi[sz]er|tray|box|holder|caddy|dividers?|stand|rack|case|tower)\b/i;
+
+function stripIncludedClause(title: string): string {
+  const normalized = title.replace(PARENTHETICAL_INCLUDED_CLAUSE, "");
+  const trailingMatch = normalized.match(BARE_TRAILING_INCLUDED_CLAUSE);
+  if (trailingMatch?.index != null && TYPE_WORD.test(normalized.slice(0, trailingMatch.index))) {
+    return normalized.slice(0, trailingMatch.index);
+  }
+  return normalized;
+}
+
 function tokenize(title: string): Set<string> {
   return new Set(
-    title
+    stripIncludedClause(title)
       .toLowerCase()
       .replace(/[^a-z0-9\s]/g, " ")
       .split(/\s+/)

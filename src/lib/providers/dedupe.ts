@@ -5,10 +5,28 @@
  * best-reviewed copy. Shared by the live search pipeline
  * (searchAllProviders) and the one-off cleanup script for prints already
  * cached before this existed.
+ *
+ * Same-domain pairs are skipped by default -- for a single-maker upload
+ * site (Printables, Thingiverse, Cults3D, MyMiniFactory) two listings on
+ * the same domain are never the same duplicate-across-sites problem this
+ * file exists for. Etsy is the one exception: it's a multi-seller
+ * marketplace where the same seller has been observed (2026-08-13)
+ * relisting the identical product twice under separate listing IDs (a
+ * language-variant split, see LANGUAGE_VARIANT_CLAUSE below). Etsy pairs
+ * are only compared when their URLs differ, never when they're the exact
+ * same listing -- scan.ts's dedupeAgainstExisting depends on a cached row
+ * never colliding with its own refresh (same URL) on a later scan; without
+ * the URL guard, a listing whose likesCount ticked up since last scan could
+ * "win" against its own stale cached copy, get the stale copy hidden, and
+ * then have the upsert silently leave it hidden too (the upsert's `data`
+ * doesn't touch `hidden`). Same-domain matching for every other site stays
+ * off entirely -- this isn't a general marketplace behavior, just this one
+ * observed Etsy pattern.
  */
 export interface Dedupable {
   title: string;
   domain: string;
+  url: string;
   ratingCount: number | null;
   likesCount: number | null;
 }
@@ -67,6 +85,17 @@ const SYNONYMS: Record<string, string> = { without: "no", insert: "organizer" };
 const PARENTHETICAL_INCLUDED_CLAUSE = /\s*\((incl?\.?|including)\b[^)]*\)/gi;
 const BARE_TRAILING_INCLUDED_CLAUSE = /\s+(incl?\.?|including)\b.*$/i;
 
+// A specific Etsy seller pattern found live (2026-08-13): the same
+// board-game organizer listed as two separate listings, differing only in
+// a "(deutsch)"/"(englisch)" marker for which language the included PDF
+// instructions are written in ("Darwin's Journey...Bauplan (deutsch)..."
+// vs "...Bauplan (englisch)..."), same price both times. The underlying
+// printable file is the same product; only the instruction-sheet language
+// differs, which this app has no use for distinguishing. Deliberately
+// narrow to the exact forms observed rather than a general language list --
+// no evidence yet of this pattern using any other language pair.
+const LANGUAGE_VARIANT_CLAUSE = /\s*\((deutsch|englisch|english|german)\)/gi;
+
 // The bare (non-parenthetical) trailing form strips everything from the
 // marker to the end of the string, which is only safe if a type word
 // already appears *before* it -- otherwise the marker could be the only
@@ -91,6 +120,7 @@ function stripIncludedClause(title: string): string {
 function tokenize(title: string): Set<string> {
   return new Set(
     stripIncludedClause(title)
+      .replace(LANGUAGE_VARIANT_CLAUSE, "")
       .toLowerCase()
       .replace(/[^a-z0-9\s]/g, " ")
       .split(/\s+/)
@@ -132,7 +162,11 @@ export function findDuplicateIndices<T extends Dedupable>(items: T[]): Set<numbe
     if (toDrop.has(i)) continue;
     for (let j = i + 1; j < items.length; j++) {
       if (toDrop.has(j)) continue;
-      if (items[i].domain === items[j].domain) continue;
+      if (items[i].domain === items[j].domain) {
+        const bothEtsy = items[i].domain === "etsy.com";
+        const sameListing = items[i].url === items[j].url;
+        if (!bothEtsy || sameListing) continue;
+      }
       if (jaccard(tokenSets[i], tokenSets[j]) < SIMILARITY_THRESHOLD) continue;
 
       const loserIsI = beats(items[j], items[i]);

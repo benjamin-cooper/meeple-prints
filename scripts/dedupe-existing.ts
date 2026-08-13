@@ -15,7 +15,7 @@ import { findDuplicateIndices } from "../src/lib/providers/dedupe";
 async function main() {
   const rows = await prisma.discoveredPrint.findMany({
     where: { hidden: false },
-    select: { id: true, gameId: true, title: true, domain: true, ratingCount: true, likesCount: true },
+    select: { id: true, gameId: true, title: true, domain: true, url: true, ratingCount: true, likesCount: true },
   });
 
   const byGame = new Map<number, typeof rows>();

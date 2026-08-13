@@ -33,13 +33,13 @@ async function dedupeAgainstExisting<
   if (newFlat.length === 0) return outcomes;
 
   // No need to exclude a new result's own already-cached row here (e.g. the
-  // same Cults3D listing being refreshed) -- findDuplicateIndices already
-  // skips same-domain pairs, so a row can never be compared against its own
-  // refresh; it can only ever be compared against a genuinely different
-  // domain's copy, which is exactly what needs resolving.
+  // same Cults3D listing being refreshed, or an Etsy listing found again by
+  // a later scan) -- findDuplicateIndices's same-URL guard (see its own
+  // comment on the Etsy exception) already keeps a row from ever being
+  // compared against its own refresh.
   const existing = await prisma.discoveredPrint.findMany({
     where: { gameId, hidden: false },
-    select: { id: true, title: true, domain: true, ratingCount: true, likesCount: true },
+    select: { id: true, title: true, domain: true, url: true, ratingCount: true, likesCount: true },
   });
   if (existing.length === 0) return outcomes;
 

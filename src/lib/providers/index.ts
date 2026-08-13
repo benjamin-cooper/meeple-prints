@@ -49,7 +49,7 @@ export async function searchAllProviders(
   const flat = outcomes.flatMap((o, outcomeIndex) =>
     o.results.map((r, resultIndex) => ({ ...r, domain: o.domain, outcomeIndex, resultIndex }))
   );
-  const toDrop = findDuplicateIndices(flat.map((r) => ({ title: r.title, domain: r.domain, ratingCount: r.ratingCount, likesCount: r.likesCount })));
+  const toDrop = findDuplicateIndices(flat.map((r) => ({ title: r.title, domain: r.domain, url: r.url, ratingCount: r.ratingCount, likesCount: r.likesCount })));
   const droppedKeys = new Set(
     [...toDrop].map((i) => `${flat[i].outcomeIndex}:${flat[i].resultIndex}`)
   );

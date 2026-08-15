@@ -139,4 +139,12 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // single unifying vocabulary to key off of, same as Sanctuary's
   // unfixable remainder.
   Ruins: /\bulvheim\b|\bcitadel\b/i,
+  // Added in the ninth audit -- "Ants" has zero currently-correct results
+  // ever, same shape as Sand/Entropy/Ruins: it's a real insect, so Etsy/
+  // Printables/Thingiverse/Cults3D surface actual ant-keeping/pest-control
+  // hobbyist prints (ant farms, feeder tubes, anti-ant cat-food bowls) on
+  // name alone. Deliberately skipped a few generic titles ("Giant Ants",
+  // "Terminal Ants", "Ants Mini") that could plausibly be real game
+  // miniatures rather than noise, same caution as the rest of this group.
+  Ants: /ant farm|ants? nest|anti-?ants|ameisenbuffet|ants?[- ]?keeper|bait holder|worker ants|ants?[- ]buffet|ants logo|rick and morty|\btrough\b/i,
 };

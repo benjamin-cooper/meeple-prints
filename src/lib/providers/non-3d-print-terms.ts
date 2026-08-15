@@ -122,6 +122,20 @@ export const NON_3D_PRINT_TERM_GROUPS: ExclusionGroup[] = [
     category: "apparel screen-printing industry (DTF transfer sheets)",
     terms: ["gang sheets?", "\\bdtf\\b"],
   },
+  // Added in the tenth audit -- unlike the earlier groups, this one is
+  // board-game-adjacent, not a random word collision: real sellers list
+  // genuine flat paper/PDF accessories (log books, score trackers, printable
+  // playmats, campaign map bundles) for the same games this app is
+  // otherwise finding real 3D-printed inserts for. relevance.ts's title
+  // match has no way to tell "printable STL insert" from "printable PDF
+  // scorecard" -- both mention the game by name and both say "printable."
+  // Verified against every currently-visible Etsy row (2026-08-15): each
+  // term here only ever matched genuine paper content, never a real STL/3D
+  // listing that happened to mention a mat or map in passing.
+  {
+    category: "board-game paper accessories (not 3D-printed)",
+    terms: ["log ?books?", "score ?sheets?", "score ?cards?", "score ?trackers?", "track maps?", "player mats?", "playmats?"],
+  },
 ];
 
 /** Compiled once at module load; behaves identically to a single hand-written alternation. */

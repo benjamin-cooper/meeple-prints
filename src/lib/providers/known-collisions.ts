@@ -147,4 +147,41 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // "Terminal Ants", "Ants Mini") that could plausibly be real game
   // miniatures rather than noise, same caution as the rest of this group.
   Ants: /ant farm|ants? nest|anti-?ants|ameisenbuffet|ants?[- ]?keeper|bait holder|worker ants|ants?[- ]buffet|ants logo|rick and morty|\btrough\b/i,
+  // Eleventh audit (2026-08-15) -- six more games added after a large manual
+  // hide pass surfaced clear, repeating collision clusters rather than
+  // scattered noise. Each verified against every currently-visible row for
+  // its game before adding.
+  //
+  // Hibachi collides with the hibachi-grill birthday-party planning genre
+  // (chopstick sleeves, place cards, banners, grilling-table blueprints) --
+  // real party content, not 3D prints, all sharing this specific vocabulary.
+  Hibachi: /chopstick|place card|party decor|birthday|banner|grilling table|teppanyaki|left right game|water bottle label|hibachi night|blackstone/i,
+  // "Tea Garden" collides with the ladies'/bridal tea-party planning genre
+  // -- every real hit for this game says "Insert"/"Organizer"/"Puerh", never
+  // "tea party".
+  "Tea Garden": /tea party/i,
+  // Iliad collides with Greek-mythology classroom/gift content (Homer's
+  // actual subject matter, so relevance.ts can't tell them apart on name
+  // alone) -- Achilles/Agamemnon namecards, escape-room activities, word-
+  // cloud prints. A second collision (a French ISP's "Freebox"/"Iliad Box"
+  // router hardware) exists too but is too ambiguous to safely exclude --
+  // a currently-correct result ("Cable cover box for Iliad Box") uses the
+  // same "Iliad Box" phrase, so only the unambiguous router-only terms
+  // would be safe, and none of those appeared often enough here to bother.
+  Iliad: /greek mythology|escape room|word clouds?|digital stamps?|trojan war|\bagamemnon\b|\bachilles\b/i,
+  // "Flip 7" collides with THREE unrelated real products that all happen to
+  // share the name: the Samsung Galaxy Z Flip 7 (foldable phone cases/
+  // skins/stands), the JBL Flip 7 (bluetooth speaker holders), and GoPro's
+  // flip-door housings. None of this app's real Flip 7 results ever
+  // mention a phone, speaker, or camera brand.
+  "Flip 7": /z flip 7|samsung.*flip|galaxy.*flip|jbl flip|gopro/i,
+  // Parks collides with two unrelated things: Disney theme-park content
+  // (its own tagline/vacation-planning vocabulary), and romance novelist
+  // Eliza Parks (her full name, not a real risk of matching a genuine
+  // insert title).
+  Parks: /eliza parks|disney|rosa parks/i,
+  // Lisboa (the board game, named for the city) collides with the city's
+  // two football clubs, Benfica and Sporting CP -- team logos, stadium
+  // models, signed photos.
+  Lisboa: /benfica|sporting (clube|de lisboa)|soccer team|futebol/i,
 };

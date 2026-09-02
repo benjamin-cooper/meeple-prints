@@ -134,7 +134,15 @@ export const NON_3D_PRINT_TERM_GROUPS: ExclusionGroup[] = [
   // listing that happened to mention a mat or map in passing.
   {
     category: "board-game paper accessories (not 3D-printed)",
-    terms: ["log ?books?", "score ?sheets?", "score ?cards?", "score ?trackers?", "track maps?", "player mats?", "playmats?"],
+    terms: [
+      "log ?books?", "score ?sheets?", "score ?cards?", "score ?trackers?", "track maps?", "player mats?", "playmats?",
+      // "summary sheet" added in the eleventh audit -- a Ticket to Ride
+      // seller lists one per map expansion ("Ticket to Ride - [6a] France
+      // || Summary Sheet"), 21 separate listings, same paper-not-3D-print
+      // shape as the rest of this group. Verified against every currently-
+      // visible row across every game -- zero false positives.
+      "summary sheets?",
+    ],
   },
 ];
 

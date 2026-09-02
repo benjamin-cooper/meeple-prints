@@ -184,4 +184,21 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // two football clubs, Benfica and Sporting CP -- team logos, stadium
   // models, signed photos.
   Lisboa: /benfica|sporting (clube|de lisboa)|soccer team|futebol/i,
+  // Twelfth audit (2026-08-22-ish, a week's worth of manual hides reviewed
+  // at once). "Tea Witches" collides with Halloween witch-themed tea party
+  // content (tea light candle holders, witch tea party games, tea bag
+  // favors) -- this game has almost no real results (2 visible) buried
+  // under it.
+  "Tea Witches": /tea light|witches? tea|tea bag envelope|apothecary label/i,
+  // "Distilled" collides with literal distilled water (Instapot capture,
+  // water bottle handles, skincare toner) -- real results for this game
+  // say "Insert"/"Organizer", never "distilled water".
+  Distilled: /distilled water/i,
+  // "The White Castle" collides with Disney-princess/fairytale imagery
+  // (Snow White, unicorns, Evil Queen) that share "white" and "castle"
+  // separately. Narrower than a bare "castle" exclusion would need to be --
+  // the game itself is about Himeji Castle (nicknamed "White Heron
+  // Castle"), so a currently-correct result legitimately uses that
+  // vocabulary; this only targets the unambiguous Disney/fairytale terms.
+  "The White Castle": /disney|unicorn|evil queen|coquette/i,
 };

@@ -111,8 +111,21 @@ export const NON_3D_PRINT_TERM_GROUPS: ExclusionGroup[] = [
     ],
   },
   {
-    category: "religious (LDS/Bible) education content",
-    terms: ["\\blds\\b", "bible stor(y|ies)", "come follow me"],
+    // Broadened in the twelfth audit -- the original LDS-specific terms
+    // only caught a fraction of this. "Covenant" alone had 13 hidden rows
+    // of mainstream (non-LDS) Christian content -- Bible verse art,
+    // Sunday school crafts, scripture cards, baptism activities -- spread
+    // widely enough across other unrelated games (Sanctuary, Earth, Recall,
+    // Falling, ...) that this belongs here as a general category rather
+    // than a per-game collision list. Verified against every currently-
+    // visible row across every game -- zero false positives even on the
+    // bare "jesus"/"bible"/"christian"/"prayer" terms.
+    category: "religious (Christian/LDS) education and craft content",
+    terms: [
+      "\\blds\\b", "come follow me", "\\bbible\\b", "\\bjesus\\b", "\\bchristian\\b", "\\bprayer\\b",
+      "\\bscripture", "sunday school", "devotional", "\\bbaptism", "communion", "\\bgospel\\b", "\\bpsalm",
+      "abrahamic covenant",
+    ],
   },
   {
     category: "digital battlemaps / VTT (virtual tabletop) maps",

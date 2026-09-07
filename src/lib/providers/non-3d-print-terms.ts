@@ -49,6 +49,12 @@ export const NON_3D_PRINT_TERM_GROUPS: ExclusionGroup[] = [
       "svg", "dxf", "glowforge", "cricut", "laser\\s*cut", "cross\\s*stitch",
       "embroidery", "sewing patterns?", "vector files?", "crochet", "knitting",
       "knit", "beading", "beadwork", "quilt(ing)?\\s*patterns?", "rhinestones?",
+      // "cut files?" added in the thirteenth audit -- "laser\s*cut" only
+      // matches when the seller actually writes "laser cut"; "(digital cut
+      // file)" (no "laser") is the same vinyl/laser-cutter file type phrased
+      // differently. Verified against every currently-visible row -- only
+      // the two genuine cut-file listings it was added for.
+      "cut files?",
     ],
   },
   {
@@ -155,6 +161,23 @@ export const NON_3D_PRINT_TERM_GROUPS: ExclusionGroup[] = [
       // shape as the rest of this group. Verified against every currently-
       // visible row across every game -- zero false positives.
       "summary sheets?",
+      // "rule refresher" added in the thirteenth audit -- one seller runs
+      // the exact same templated listing ("<GAME> <All In> Board Game,
+      // Summary Guide, Rule Refresher, Player Aid") across at least 7
+      // unrelated games. None of the 7 mention STL/3D print/insert/
+      // organizer anywhere -- a flat printable reference sheet, not a
+      // physical product. Verified against every currently-visible row --
+      // catches exactly those 7, nothing else.
+      "rule refreshers?",
+      // Bare "pdf" added by explicit request (2026-09-07) -- a blanket
+      // rule, not a verified-safe one like the rest of this file: this
+      // deliberately also excludes the 3 Darwin's Journey/Sleeping Gods
+      // Etsy listings confirmed genuine earlier (real 3D-print organizer
+      // files that just happen to bundle a PDF instruction sheet). Both
+      // games already have other real STL sources on other domains, so the
+      // user chose "no PDFs at all" over keeping those two alternate
+      // listings.
+      "\\bpdf\\b",
     ],
   },
 ];

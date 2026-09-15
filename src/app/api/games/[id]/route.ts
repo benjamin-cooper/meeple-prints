@@ -65,15 +65,25 @@ export async function GET(_request: NextRequest, { params }: Params) {
   const gameId = parseInt(id);
   if (isNaN(gameId)) return Response.json({ error: "Invalid id" }, { status: 400 });
 
-  const game = await prisma.game.findUnique({
-    where: { id: gameId },
-    include: {
-      products: {
-        orderBy: { createdAt: "desc" },
-        include: { games: { select: { id: true, name: true, thumbnail: true, bggId: true } } },
+  const [game, discoveredCounts] = await Promise.all([
+    prisma.game.findUnique({
+      where: { id: gameId },
+      include: {
+        products: {
+          orderBy: { createdAt: "desc" },
+          include: { games: { select: { id: true, name: true, thumbnail: true, bggId: true } } },
+        },
       },
-    },
-  });
+    }),
+    prisma.discoveredPrint.groupBy({ by: ["hidden"], where: { gameId }, _count: { _all: true } }),
+  ]);
   if (!game) return Response.json({ error: "Not found" }, { status: 404 });
-  return Response.json(game);
+
+  const discoveredStats = { total: 0, hidden: 0 };
+  for (const row of discoveredCounts) {
+    discoveredStats.total += row._count._all;
+    if (row.hidden) discoveredStats.hidden += row._count._all;
+  }
+
+  return Response.json({ ...game, discoveredStats });
 }

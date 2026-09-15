@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Plus, ExternalLink, Search, FolderMinus, FolderPlus, Trash2 } from "lucide-react";
+import { Plus, ExternalLink, Search, FolderMinus, FolderPlus, Trash2, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,7 +16,7 @@ import { ProductCard } from "@/components/product-card";
 import { ProductDialog } from "@/components/product-dialog";
 import { SearchResultsAggregator } from "@/components/search-results-aggregator";
 import { searchLinksForGame } from "@/lib/search-links";
-import { MISC_GAME_BGG_ID } from "@/lib/constants";
+import { MISC_GAME_BGG_ID, isNoisyGame } from "@/lib/constants";
 import type { ProviderOutcome, ProviderResult } from "@/lib/providers/types";
 import type { Game, GameSummary, Product } from "@/lib/types";
 
@@ -160,6 +160,16 @@ export default function GameDetailPage({ params }: { params: Promise<{ id: strin
           <p className="text-sm text-muted-foreground">
             {game.products.length} print{game.products.length === 1 ? "" : "s"} saved
           </p>
+          {isNoisyGame(game.discoveredStats) && game.discoveredStats && (
+            <Link
+              href={`/hidden?q=${encodeURIComponent(game.name)}`}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-destructive hover:underline underline-offset-4"
+            >
+              <TriangleAlert className="size-3.5" />
+              {Math.round((game.discoveredStats.hidden / game.discoveredStats.total) * 100)}% of{" "}
+              {game.discoveredStats.total} found results are hidden as noise — review them
+            </Link>
+          )}
           <div className="flex gap-2 pt-1 flex-wrap">
             <Button onClick={openAdd} className="gap-1.5"><Plus className="size-4" /> Add a print for this game</Button>
             <Button variant="secondary" className="gap-1.5" onClick={handleSearchAllSites} disabled={searching}>

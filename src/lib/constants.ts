@@ -8,6 +8,23 @@
 export const MISC_GAME_BGG_ID = -1;
 export const MISC_GAME_NAME = "Miscellaneous";
 
+/**
+ * A game's search results are flagged "noisy" once enough of what's ever
+ * been found for it turns out to be hidden -- the same shape every
+ * false-collision game this session found by hand (Sand, Ants, Hibachi:
+ * hidden ratio near or at 100%) before a KNOWN_COLLISION_EXCLUSIONS or
+ * NON_3D_PRINT_PATTERN rule fixed it. The minimum-discovered floor exists
+ * so a brand-new game with 1 hidden result out of 2 total doesn't get
+ * flagged on a meaningless sample size.
+ */
+export const NOISY_GAME_MIN_DISCOVERED = 5;
+export const NOISY_GAME_HIDDEN_RATIO = 0.5;
+
+export function isNoisyGame(stats: { total: number; hidden: number } | undefined): boolean {
+  if (!stats || stats.total < NOISY_GAME_MIN_DISCOVERED) return false;
+  return stats.hidden / stats.total >= NOISY_GAME_HIDDEN_RATIO;
+}
+
 export const SITE_LABELS: Record<string, string> = {
   "thingiverse.com": "Thingiverse",
   "printables.com": "Printables",

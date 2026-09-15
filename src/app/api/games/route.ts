@@ -11,9 +11,25 @@ export async function GET() {
     create: { bggId: MISC_GAME_BGG_ID, name: MISC_GAME_NAME, inCollection: true },
   });
 
-  const games = await prisma.game.findMany({
-    orderBy: { name: "asc" },
-    include: { _count: { select: { products: true } } },
-  });
-  return Response.json(games);
+  const [games, discoveredCounts] = await Promise.all([
+    prisma.game.findMany({
+      orderBy: { name: "asc" },
+      include: { _count: { select: { products: true } } },
+    }),
+    prisma.discoveredPrint.groupBy({ by: ["gameId", "hidden"], _count: { _all: true } }),
+  ]);
+
+  const statsByGame = new Map<number, { total: number; hidden: number }>();
+  for (const row of discoveredCounts) {
+    const entry = statsByGame.get(row.gameId) ?? { total: 0, hidden: 0 };
+    entry.total += row._count._all;
+    if (row.hidden) entry.hidden += row._count._all;
+    statsByGame.set(row.gameId, entry);
+  }
+
+  const withStats = games.map((g) => ({
+    ...g,
+    discoveredStats: statsByGame.get(g.id) ?? { total: 0, hidden: 0 },
+  }));
+  return Response.json(withStats);
 }

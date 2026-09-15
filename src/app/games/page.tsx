@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { Search, TriangleAlert } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Game } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { isNoisyGame } from "@/lib/constants";
 
-type SortMode = "gaps" | "name";
+type SortMode = "gaps" | "noisy" | "name";
 
 export default function GamesPage() {
   const [games, setGames] = useState<Game[] | null>(null);
@@ -26,6 +27,13 @@ export default function GamesPage() {
     let list = games.filter((g) => g.inCollection && (!q || g.name.toLowerCase().includes(q)));
     list = [...list].sort((a, b) => {
       if (sort === "name") return a.name.localeCompare(b.name);
+      if (sort === "noisy") {
+        const ratio = (g: Game) => {
+          const s = g.discoveredStats;
+          return s && s.total > 0 ? s.hidden / s.total : 0;
+        };
+        return ratio(b) - ratio(a) || a.name.localeCompare(b.name);
+      }
       const ac = a._count?.products ?? 0;
       const bc = b._count?.products ?? 0;
       return ac - bc || a.name.localeCompare(b.name);
@@ -34,17 +42,30 @@ export default function GamesPage() {
   }, [games, query, sort]);
 
   const gapCount = games?.filter((g) => g.inCollection && (g._count?.products ?? 0) === 0).length ?? 0;
+  const noisyCount = games?.filter((g) => g.inCollection && isNoisyGame(g.discoveredStats)).length ?? 0;
 
   return (
     <div className="space-y-5">
       <div>
         <h1 className="font-display font-extrabold uppercase text-3xl tracking-tight leading-none">Games</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {games === null
-            ? "Loading…"
-            : gapCount > 0
-              ? `${gapCount} game${gapCount === 1 ? " has" : "s have"} no prints saved yet`
-              : "Every game in your collection has at least one saved print."}
+          {games === null ? (
+            "Loading…"
+          ) : (
+            <>
+              {gapCount > 0
+                ? `${gapCount} game${gapCount === 1 ? " has" : "s have"} no prints saved yet`
+                : "Every game in your collection has at least one saved print."}
+              {noisyCount > 0 && (
+                <>
+                  {" · "}
+                  <span className="text-destructive font-medium">
+                    {noisyCount} game{noisyCount === 1 ? " is" : "s are"} mostly noise
+                  </span>
+                </>
+              )}
+            </>
+          )}
         </p>
       </div>
 
@@ -59,6 +80,12 @@ export default function GamesPage() {
             className={cn("px-3 h-7 rounded-md text-sm", sort === "gaps" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
           >
             Needs Prints
+          </button>
+          <button
+            onClick={() => setSort("noisy")}
+            className={cn("px-3 h-7 rounded-md text-sm", sort === "noisy" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
+          >
+            Noisiest
           </button>
           <button
             onClick={() => setSort("name")}
@@ -87,6 +114,10 @@ export default function GamesPage() {
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
           {filtered.map((g) => {
             const count = g._count?.products ?? 0;
+            const noisy = isNoisyGame(g.discoveredStats);
+            const hiddenPct = g.discoveredStats && g.discoveredStats.total > 0
+              ? Math.round((g.discoveredStats.hidden / g.discoveredStats.total) * 100)
+              : 0;
             return (
               <Link
                 key={g.id}
@@ -98,6 +129,14 @@ export default function GamesPage() {
                     <Image src={g.thumbnail} alt="" fill className="object-cover" unoptimized />
                   ) : (
                     <div className="w-full h-full bed-grid" />
+                  )}
+                  {noisy && (
+                    <span
+                      title={`${hiddenPct}% of found results for this game have been hidden as noise`}
+                      className="absolute top-1.5 left-1.5 size-5 rounded-full bg-destructive text-white flex items-center justify-center"
+                    >
+                      <TriangleAlert className="size-3" />
+                    </span>
                   )}
                   <span
                     className={cn(

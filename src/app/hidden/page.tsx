@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { Suspense, useMemo, useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,8 +19,17 @@ interface HiddenPrint {
 }
 
 export default function HiddenPage() {
+  return (
+    <Suspense>
+      <HiddenPageContent />
+    </Suspense>
+  );
+}
+
+function HiddenPageContent() {
+  const searchParams = useSearchParams();
   const [items, setItems] = useState<HiddenPrint[] | null>(null);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [unhiding, setUnhiding] = useState<number | "bulk" | null>(null);
 

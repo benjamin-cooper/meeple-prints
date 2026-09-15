@@ -5,11 +5,17 @@ export interface GameSummary {
   bggId: number;
 }
 
+export interface DiscoveredPrintStats {
+  total: number;
+  hidden: number;
+}
+
 export interface Game extends GameSummary {
   yearPublished: number | null;
   image: string | null;
   inCollection: boolean;
   _count?: { products: number };
+  discoveredStats?: DiscoveredPrintStats;
 }
 
 export interface Product {

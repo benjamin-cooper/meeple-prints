@@ -172,6 +172,34 @@
   opacity: 1;
 }
 
+/* Same registration-mark geometry as .tick-corners, but always on -- for
+   the one card on a page with no natural hover moment to reveal it (the
+   login gate), where "calipers already closed on this part" reads as
+   "ready to check credentials" rather than an idle decoration. */
+.tick-corners-static {
+  position: relative;
+}
+.tick-corners-static::before,
+.tick-corners-static::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+}
+.tick-corners-static::before {
+  top: 4px;
+  left: 4px;
+  border-top: 2px solid var(--primary);
+  border-left: 2px solid var(--primary);
+}
+.tick-corners-static::after {
+  bottom: 4px;
+  right: 4px;
+  border-bottom: 2px solid var(--primary);
+  border-right: 2px solid var(--primary);
+}
+
 /* Staggered card entrance -- animation-delay set per-card via inline style.
    `both` fill-mode holds the pre-animation state during the delay instead
    of flashing full-opacity before it starts. */

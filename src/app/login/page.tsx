@@ -31,7 +31,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background bed-grid">
+    <div className="min-h-screen flex items-center justify-center bg-background workshop-grid">
       <div className="w-full max-w-sm space-y-6 p-6">
         <div className="text-center">
           <span className="font-display font-extrabold uppercase tracking-tight text-2xl leading-none text-foreground">
@@ -40,7 +40,13 @@ export default function LoginPage() {
           <p className="text-sm text-muted-foreground mt-2">Sign in with your BoardGameGeek account.</p>
         </div>
 
-        <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+        <div className="tick-corners-static rounded-lg border border-border bg-card p-4 space-y-3">
+          <div className="flex items-center gap-1.5 pb-1 -mt-0.5">
+            <span className="size-1.5 rounded-full bg-muted-foreground" />
+            <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              BGG session — not connected
+            </span>
+          </div>
           <div className="space-y-1.5">
             <Label htmlFor="bgg-username">BGG username</Label>
             <Input

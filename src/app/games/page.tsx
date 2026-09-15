@@ -11,10 +11,17 @@ import type { Game } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { isNoisyGame } from "@/lib/constants";
 
-type SortMode = "gaps" | "noisy" | "name";
+type SortMode = "attention" | "gaps" | "noisy" | "name";
 
 function isSortMode(value: string | null): value is SortMode {
-  return value === "gaps" || value === "noisy" || value === "name";
+  return value === "attention" || value === "gaps" || value === "noisy" || value === "name";
+}
+
+/** Higher = more urgent: a game that's both empty and noisy outranks either problem alone. */
+function attentionScore(g: Game): number {
+  const empty = (g._count?.products ?? 0) === 0 ? 1 : 0;
+  const noisy = isNoisyGame(g.discoveredStats) ? 1 : 0;
+  return empty + noisy;
 }
 
 export default function GamesPage() {
@@ -31,7 +38,7 @@ function GamesPageContent() {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortMode>(() => {
     const fromUrl = searchParams.get("sort");
-    return isSortMode(fromUrl) ? fromUrl : "gaps";
+    return isSortMode(fromUrl) ? fromUrl : "attention";
   });
 
   useEffect(() => {
@@ -42,14 +49,15 @@ function GamesPageContent() {
     if (!games) return [];
     const q = query.trim().toLowerCase();
     let list = games.filter((g) => g.inCollection && (!q || g.name.toLowerCase().includes(q)));
+    const ratio = (g: Game) => {
+      const s = g.discoveredStats;
+      return s && s.total > 0 ? s.hidden / s.total : 0;
+    };
     list = [...list].sort((a, b) => {
       if (sort === "name") return a.name.localeCompare(b.name);
-      if (sort === "noisy") {
-        const ratio = (g: Game) => {
-          const s = g.discoveredStats;
-          return s && s.total > 0 ? s.hidden / s.total : 0;
-        };
-        return ratio(b) - ratio(a) || a.name.localeCompare(b.name);
+      if (sort === "noisy") return ratio(b) - ratio(a) || a.name.localeCompare(b.name);
+      if (sort === "attention") {
+        return attentionScore(b) - attentionScore(a) || ratio(b) - ratio(a) || a.name.localeCompare(b.name);
       }
       const ac = a._count?.products ?? 0;
       const bc = b._count?.products ?? 0;
@@ -92,6 +100,12 @@ function GamesPageContent() {
           <Input placeholder="Search your collection…" value={query} onChange={(e) => setQuery(e.target.value)} className="pl-9" />
         </div>
         <div className="flex items-center gap-0.5 border border-input rounded-lg p-0.5">
+          <button
+            onClick={() => setSort("attention")}
+            className={cn("px-3 h-7 rounded-md text-sm", sort === "attention" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
+          >
+            Needs Attention
+          </button>
           <button
             onClick={() => setSort("gaps")}
             className={cn("px-3 h-7 rounded-md text-sm", sort === "gaps" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}

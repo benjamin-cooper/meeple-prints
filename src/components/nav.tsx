@@ -14,6 +14,7 @@ const LINKS = [
   { href: "/", label: "Catalog" },
   { href: "/games", label: "Games" },
   { href: "/search", label: "Search" },
+  { href: "/hidden", label: "Hidden" },
   { href: "/connect", label: "Connect" },
 ];
 

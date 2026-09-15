@@ -5,8 +5,13 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { RatingRow } from "@/components/rating-row";
-import { typeLabel } from "@/lib/constants";
+import { typeLabel, HIDE_REASONS } from "@/lib/constants";
+import { HIDE_REASON_ICONS } from "@/lib/hide-reason-icons";
 import { timeAgo, cn } from "@/lib/utils";
 import type { DiscoveredPrint, Product } from "@/lib/types";
 
@@ -17,6 +22,9 @@ export function DiscoveredPrintCard({
   onSaved,
   onHidden,
   animationDelayMs,
+  selectMode,
+  selected,
+  onToggleSelect,
 }: {
   item: DiscoveredPrint;
   now: number | null;
@@ -24,17 +32,20 @@ export function DiscoveredPrintCard({
   onHidden: (id: number) => void;
   /** Staggers this card's entrance animation relative to its grid siblings. */
   animationDelayMs?: number;
+  selectMode?: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
 }) {
   const [saving, setSaving] = useState(false);
   const [hiding, setHiding] = useState(false);
 
-  const handleHide = async () => {
+  const handleHide = async (reason: string) => {
     setHiding(true);
     try {
       const res = await fetch("/api/catalog/hide", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: item.id }),
+        body: JSON.stringify({ id: item.id, reason }),
       });
       if (!res.ok) throw new Error("Couldn't hide that.");
       onHidden(item.id);
@@ -81,7 +92,10 @@ export function DiscoveredPrintCard({
 
   return (
     <div
-      className="card-enter tick-corners relative flex flex-col rounded-lg border border-dashed border-border bg-card overflow-hidden"
+      className={cn(
+        "card-enter tick-corners relative flex flex-col rounded-lg border border-dashed bg-card overflow-hidden",
+        selected ? "border-primary ring-1 ring-primary" : "border-border"
+      )}
       style={animationDelayMs ? { animationDelay: `${animationDelayMs}ms` } : undefined}
     >
       <a href={item.url} target="_blank" rel="noopener noreferrer" className="relative aspect-[4/3] bg-muted block">
@@ -95,16 +109,35 @@ export function DiscoveredPrintCard({
         <span className="absolute top-2 left-2 rounded-sm bg-popover/90 backdrop-blur px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wide text-popover-foreground ring-1 ring-foreground/10">
           {item.siteName ?? item.domain}
         </span>
+        {selectMode && (
+          <div
+            className="absolute bottom-2 left-2 p-0.5 rounded-sm bg-popover/90 backdrop-blur ring-1 ring-foreground/10"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          >
+            <Checkbox checked={!!selected} onCheckedChange={() => onToggleSelect?.()} />
+          </div>
+        )}
       </a>
-      <button
-        onClick={handleHide}
-        disabled={hiding}
-        title="Not relevant -- hide this"
-        aria-label="Not relevant, hide this"
-        className="absolute top-2 right-2 p-1 rounded-sm bg-popover/90 backdrop-blur text-popover-foreground ring-1 ring-foreground/10 hover:text-destructive disabled:opacity-50"
-      >
-        <X className="size-3" />
-      </button>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          disabled={hiding}
+          title="Not relevant -- hide this"
+          aria-label="Not relevant, hide this"
+          className="absolute top-2 right-2 p-1 rounded-sm bg-popover/90 backdrop-blur text-popover-foreground ring-1 ring-foreground/10 hover:text-destructive disabled:opacity-50"
+        >
+          <X className="size-3" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {HIDE_REASONS.map((r) => {
+            const Icon = HIDE_REASON_ICONS[r.value];
+            return (
+              <DropdownMenuItem key={r.value} onClick={() => handleHide(r.value)} className="gap-2">
+                <Icon className="size-3.5 text-muted-foreground" /> {r.label}
+              </DropdownMenuItem>
+            );
+          })}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <div className="p-3 flex flex-col gap-1.5 flex-1">
         <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold leading-snug line-clamp-2 hover:text-primary">

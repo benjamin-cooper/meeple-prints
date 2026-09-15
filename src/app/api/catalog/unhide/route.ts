@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
   if (!printId) return Response.json({ error: "id is required." }, { status: 400 });
 
   try {
-    await prisma.discoveredPrint.update({ where: { id: printId }, data: { hidden: false } });
+    await prisma.discoveredPrint.update({ where: { id: printId }, data: { hidden: false, hideReason: null } });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
       return Response.json({ error: "That print doesn't exist." }, { status: 404 });

@@ -78,6 +78,7 @@ model DiscoveredPrint {
   ratingCount  Int?
   likesCount   Int?
   hidden       Boolean  @default(false) // dismissed as "not relevant" -- scans never reset this back to false
+  hideReason   String? // one of HIDE_REASONS' values; null for rows hidden before this existed
   firstSeenAt  DateTime @default(now())
   lastSeenAt   DateTime @updatedAt
 

@@ -66,6 +66,25 @@ export const PRODUCT_STATUSES = [
   { value: "installed", label: "In the Box", swatch: "bg-status-installed" },
 ] as const;
 
+/**
+ * Captured at hide-time so a future audit can query "what got dismissed
+ * and why" directly instead of re-deriving intent from titles alone --
+ * every collision-exclusion/content-type-filter addition this project has
+ * ever shipped started as a human staring at a pile of hidden titles
+ * guessing at the pattern.
+ */
+export const HIDE_REASONS = [
+  { value: "wrong-game", label: "Wrong game" },
+  { value: "not-3d-print", label: "Not a 3D print" },
+  { value: "duplicate", label: "Duplicate" },
+  { value: "low-quality", label: "Low quality" },
+  { value: "other", label: "Other" },
+] as const;
+
+export function hideReasonLabel(value: string | null): string | null {
+  return HIDE_REASONS.find((r) => r.value === value)?.label ?? value;
+}
+
 export function typeLabel(value: string): string {
   return PRODUCT_TYPES.find((t) => t.value === value)?.label ?? value;
 }

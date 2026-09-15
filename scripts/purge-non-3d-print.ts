@@ -28,7 +28,7 @@ async function main() {
 
   await prisma.discoveredPrint.updateMany({
     where: { id: { in: idsToHide } },
-    data: { hidden: true },
+    data: { hidden: true, hideReason: "not-3d-print" },
   });
 
   console.log(`Hid ${idsToHide.length} non-3D-print row(s).`);

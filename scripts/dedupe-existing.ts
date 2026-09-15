@@ -38,7 +38,7 @@ async function main() {
 
   await prisma.discoveredPrint.updateMany({
     where: { id: { in: idsToHide } },
-    data: { hidden: true },
+    data: { hidden: true, hideReason: "duplicate" },
   });
 
   console.log(`Hid ${idsToHide.length} duplicate print(s) across ${byGame.size} games.`);

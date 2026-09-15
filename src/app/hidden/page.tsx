@@ -7,7 +7,9 @@ import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { SITE_LABELS } from "@/lib/constants";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { SITE_LABELS, HIDE_REASONS, hideReasonLabel } from "@/lib/constants";
+import { HIDE_REASON_ICONS } from "@/lib/hide-reason-icons";
 
 interface HiddenPrint {
   id: number;
@@ -15,6 +17,7 @@ interface HiddenPrint {
   url: string;
   domain: string;
   siteName: string | null;
+  hideReason: string | null;
   game: { id: number; name: string };
 }
 
@@ -30,6 +33,7 @@ function HiddenPageContent() {
   const searchParams = useSearchParams();
   const [items, setItems] = useState<HiddenPrint[] | null>(null);
   const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
+  const [reasonFilter, setReasonFilter] = useState<string>("all");
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [unhiding, setUnhiding] = useState<number | "bulk" | null>(null);
 
@@ -40,9 +44,18 @@ function HiddenPageContent() {
   const filtered = useMemo(() => {
     if (!items) return [];
     const q = query.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter((i) => i.title.toLowerCase().includes(q) || i.game.name.toLowerCase().includes(q));
-  }, [items, query]);
+    return items.filter((i) => {
+      if (reasonFilter !== "all" && (i.hideReason ?? "unlabeled") !== reasonFilter) return false;
+      if (q && !i.title.toLowerCase().includes(q) && !i.game.name.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [items, query, reasonFilter]);
+
+  const reasonItems = {
+    all: "All reasons",
+    ...Object.fromEntries(HIDE_REASONS.map((r) => [r.value, r.label])),
+    unlabeled: "Unlabeled",
+  };
 
   const unhideIds = async (ids: number[]) => {
     const results = await Promise.allSettled(
@@ -134,8 +147,8 @@ function HiddenPageContent() {
 
       {items !== null && items.length > 0 && (
         <>
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 min-w-[160px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
                 placeholder="Search hidden prints…"
@@ -144,6 +157,14 @@ function HiddenPageContent() {
                 className="pl-9"
               />
             </div>
+            <Select items={reasonItems} value={reasonFilter} onValueChange={(v) => setReasonFilter(v as string)}>
+              <SelectTrigger className="w-[150px]"><SelectValue placeholder="All reasons" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All reasons</SelectItem>
+                {HIDE_REASONS.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                <SelectItem value="unlabeled">Unlabeled</SelectItem>
+              </SelectContent>
+            </Select>
             <Button
               variant="secondary"
               disabled={selected.size === 0 || unhiding === "bulk"}
@@ -172,6 +193,14 @@ function HiddenPageContent() {
                       {item.siteName ?? SITE_LABELS[item.domain] ?? item.domain} · {item.game.name}
                     </p>
                   </div>
+                  {item.hideReason && (() => {
+                    const Icon = HIDE_REASON_ICONS[item.hideReason];
+                    return (
+                      <span className="shrink-0 inline-flex items-center gap-1 text-[11px] font-mono px-1.5 py-0.5 rounded-full bg-secondary text-secondary-foreground">
+                        {Icon && <Icon className="size-3" />} {hideReasonLabel(item.hideReason)}
+                      </span>
+                    );
+                  })()}
                   <Button
                     variant="secondary"
                     size="sm"

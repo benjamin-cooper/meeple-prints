@@ -49,7 +49,10 @@ async function dedupeAgainstExisting<
 
   const existingIdsToHide = [...toDrop].filter((i) => i < existing.length).map((i) => existing[i].id);
   if (existingIdsToHide.length) {
-    await prisma.discoveredPrint.updateMany({ where: { id: { in: existingIdsToHide } }, data: { hidden: true } });
+    await prisma.discoveredPrint.updateMany({
+      where: { id: { in: existingIdsToHide } },
+      data: { hidden: true, hideReason: "duplicate" },
+    });
   }
 
   const newDropKeys = new Set(

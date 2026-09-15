@@ -3,23 +3,30 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Search, Plus, LayoutGrid, Rows3, RefreshCw, X, Download } from "lucide-react";
+import { Search, Plus, LayoutGrid, Rows3, RefreshCw, X, Download, Upload, CheckSquare } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from "@/components/ui/select";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { ProductCard } from "@/components/product-card";
 import { ProductRow } from "@/components/product-row";
 import { ProductDialog } from "@/components/product-dialog";
+import { ImportDialog } from "@/components/import-dialog";
 import { DiscoveredPrintCard } from "@/components/discovered-print-card";
-import { PRODUCT_TYPES, PRODUCT_STATUSES, SITE_LABELS } from "@/lib/constants";
+import { PRODUCT_TYPES, PRODUCT_STATUSES, SITE_LABELS, HIDE_REASONS } from "@/lib/constants";
+import { HIDE_REASON_ICONS } from "@/lib/hide-reason-icons";
 import type { CatalogItem, Game, GameSummary, Product } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+const itemKey = (item: CatalogItem) => `${item.kind}-${item.id}`;
+
 type ViewMode = "marketplace" | "spreadsheet";
-type SortMode = "newest" | "title" | "price-low" | "price-high";
+type SortMode = "newest" | "game" | "price-low" | "price-high";
 type GameWithScan = Game & { lastScannedAt: string | null };
 
 const PAGE_SIZE = 60;
@@ -81,10 +88,16 @@ export default function CatalogPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [freeOnly, setFreeOnly] = useState(false);
   const [savedOnly, setSavedOnly] = useState(false);
-  const [sort, setSort] = useState<SortMode>("title");
+  const [sort, setSort] = useState<SortMode>("game");
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
+
+  const [importOpen, setImportOpen] = useState(false);
+
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [bulking, setBulking] = useState(false);
 
   const loadCatalog = () =>
     fetch("/api/catalog").then((r) => r.json()).then((data) => {
@@ -197,7 +210,13 @@ export default function CatalogPage() {
     () => ({ all: "All statuses", ...Object.fromEntries(visibleStatuses.map((s) => [s.value, s.label])) }),
     [visibleStatuses]
   );
-  const sortItems = { newest: "Newest", title: "Title A-Z", "price-low": "Price: Low", "price-high": "Price: High" };
+  const sortItems = { newest: "Newest", game: "Game A-Z", "price-low": "Price: Low", "price-high": "Price: High" };
+
+  // For a saved item linked to more than one game, the alphabetically-first
+  // name is the deterministic choice -- there's no single "primary" game to
+  // prefer instead, and this keeps the sort stable across re-renders.
+  const primaryGameName = (item: CatalogItem) =>
+    itemGames(item).map((g) => g.name).sort((a, b) => a.localeCompare(b))[0] ?? "";
 
   const filtered = useMemo(() => {
     if (!items) return [];
@@ -206,7 +225,11 @@ export default function CatalogPage() {
 
     list = [...list].sort((a, b) => {
       switch (sort) {
-        case "title": return a.title.trim().localeCompare(b.title.trim());
+        // Grouped by game first so everything for one game sits together;
+        // title is only a tiebreak within that group, never its own sort
+        // option -- surfacing "sort by bare title" invites a shuffled-
+        // looking grid where unrelated games interleave alphabetically.
+        case "game": return primaryGameName(a).localeCompare(primaryGameName(b)) || a.title.trim().localeCompare(b.title.trim());
         case "price-low": return (a.isFree ? 0 : a.price ?? Infinity) - (b.isFree ? 0 : b.price ?? Infinity);
         case "price-high": return (b.isFree ? 0 : b.price ?? -Infinity) - (a.isFree ? 0 : a.price ?? -Infinity);
         default: return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -229,6 +252,12 @@ export default function CatalogPage() {
   useEffect(() => setVisibleCount(PAGE_SIZE), [query, gameFilter, typeFilter, domainFilter, statusFilter, freeOnly, savedOnly, sort]);
   const visibleItems = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
   const hasMore = filtered.length > visibleCount;
+
+  // A filter change can drop a selected card out of view entirely -- clear
+  // the selection along with it rather than leaving a bulk action silently
+  // operating on a smaller set than the displayed count implies.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => setSelectedKeys(new Set()), [query, gameFilter, typeFilter, domainFilter, statusFilter, freeOnly, savedOnly]);
 
   const hasActiveFilters =
     query.trim() !== "" || gameFilter !== "all" || typeFilter !== "all" ||
@@ -259,8 +288,112 @@ export default function CatalogPage() {
   };
   const removeLocal = (id: number) =>
     setItems((prev) => prev?.filter((i) => !(i.kind === "saved" && i.id === id)) ?? prev);
-  const hideDiscovered = (id: number) =>
+  const hideDiscovered = (id: number) => {
     setItems((prev) => prev?.filter((i) => !(i.kind === "discovered" && i.id === id)) ?? prev);
+    setHiddenCount((c) => c + 1);
+  };
+
+  const selectedItems = useMemo(() => filtered.filter((i) => selectedKeys.has(itemKey(i))), [filtered, selectedKeys]);
+  const selectedDiscovered = selectedItems.filter(
+    (i): i is Extract<CatalogItem, { kind: "discovered" }> => i.kind === "discovered"
+  );
+  const selectedSaved = selectedItems.filter(
+    (i): i is Extract<CatalogItem, { kind: "saved" }> => i.kind === "saved"
+  );
+
+  const toggleSelect = (item: CatalogItem) => {
+    const key = itemKey(item);
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    setSelectedKeys(new Set());
+  };
+
+  const handleBulkSave = async () => {
+    if (selectedDiscovered.length === 0) return;
+    setBulking(true);
+    try {
+      const results = await Promise.allSettled(
+        selectedDiscovered.map((item) =>
+          fetch("/api/products", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              url: item.url, title: item.title, thumbnailUrl: item.thumbnailUrl, domain: item.domain,
+              siteName: item.siteName, creator: item.creator, price: item.price, currency: item.currency,
+              isFree: item.isFree, siteRating: item.rating, siteRatingCount: item.ratingCount,
+              siteLikesCount: item.likesCount, type: item.type, status: "wishlist", gameIds: [item.game.id],
+            }),
+          }).then(async (res) => {
+            if (!res.ok) throw new Error();
+            return (await res.json()) as Product;
+          })
+        )
+      );
+      const succeeded = results.filter((r): r is PromiseFulfilledResult<Product> => r.status === "fulfilled");
+      succeeded.forEach((r) => upsertLocal(r.value));
+      toast.success(`Saved ${succeeded.length} of ${selectedDiscovered.length}.`);
+      exitSelectMode();
+    } finally {
+      setBulking(false);
+    }
+  };
+
+  const handleBulkHide = async (reason: string) => {
+    if (selectedDiscovered.length === 0) return;
+    setBulking(true);
+    try {
+      const results = await Promise.allSettled(
+        selectedDiscovered.map((item) =>
+          fetch("/api/catalog/hide", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: item.id, reason }),
+          }).then((res) => {
+            if (!res.ok) throw new Error();
+            return item.id;
+          })
+        )
+      );
+      const succeeded = results.filter((r): r is PromiseFulfilledResult<number> => r.status === "fulfilled");
+      succeeded.forEach((r) => hideDiscovered(r.value));
+      toast.success(`Hid ${succeeded.length} of ${selectedDiscovered.length}.`);
+      exitSelectMode();
+    } finally {
+      setBulking(false);
+    }
+  };
+
+  const handleBulkStatus = async (status: string) => {
+    if (selectedSaved.length === 0) return;
+    setBulking(true);
+    try {
+      const results = await Promise.allSettled(
+        selectedSaved.map((item) =>
+          fetch(`/api/products/${item.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status }),
+          }).then(async (res) => {
+            if (!res.ok) throw new Error();
+            return (await res.json()) as Product;
+          })
+        )
+      );
+      const succeeded = results.filter((r): r is PromiseFulfilledResult<Product> => r.status === "fulfilled");
+      succeeded.forEach((r) => upsertLocal(r.value));
+      toast.success(`Updated ${succeeded.length} of ${selectedSaved.length}.`);
+      exitSelectMode();
+    } finally {
+      setBulking(false);
+    }
+  };
 
   const handleScanNow = async () => {
     setScanning(true);
@@ -309,12 +442,22 @@ export default function CatalogPage() {
         </div>
         <div className="flex gap-2 shrink-0">
           <Button
+            variant={selectMode ? "secondary" : "outline"}
+            className="gap-1.5"
+            onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
+          >
+            <CheckSquare className="size-4" /> {selectMode ? "Cancel" : "Select"}
+          </Button>
+          <Button
             variant="outline"
             className="gap-1.5"
             nativeButton={false}
             render={<a href="/api/products/export" download />}
           >
             <Download className="size-4" /> Export
+          </Button>
+          <Button variant="outline" className="gap-1.5" onClick={() => setImportOpen(true)}>
+            <Upload className="size-4" /> Import
           </Button>
           <Button variant="secondary" onClick={handleScanNow} disabled={scanning} className="gap-1.5">
             <RefreshCw className={cn("size-4", scanning && "animate-spin")} /> {scanning ? "Scanning…" : "Scan now"}
@@ -324,6 +467,60 @@ export default function CatalogPage() {
           </Button>
         </div>
       </div>
+
+      {selectMode && (
+        <div className="sticky top-16 z-30 flex flex-wrap items-center gap-3 rounded-lg border border-border border-l-4 border-l-primary bg-card p-3 shadow-sm">
+          <span className="font-mono text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {selectedItems.length === 0 ? (
+              "Select prints below"
+            ) : (
+              <><span className="text-foreground text-sm">{selectedItems.length}</span> selected</>
+            )}
+          </span>
+          <div className="ml-auto flex flex-wrap items-center gap-1.5">
+            <button
+              onClick={handleBulkSave}
+              disabled={selectedDiscovered.length === 0 || bulking}
+              className="inline-flex items-center h-8 px-3 rounded-md font-mono text-xs font-semibold uppercase tracking-wide bg-secondary text-secondary-foreground hover:bg-secondary/70 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+            >
+              Save {selectedDiscovered.length || ""}
+            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                disabled={selectedDiscovered.length === 0 || bulking}
+                className="inline-flex items-center h-8 px-3 rounded-md font-mono text-xs font-semibold uppercase tracking-wide bg-secondary text-secondary-foreground hover:bg-secondary/70 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+              >
+                Hide {selectedDiscovered.length || ""}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {HIDE_REASONS.map((r) => {
+                  const Icon = HIDE_REASON_ICONS[r.value];
+                  return (
+                    <DropdownMenuItem key={r.value} onClick={() => handleBulkHide(r.value)} className="gap-2">
+                      <Icon className="size-3.5 text-muted-foreground" /> {r.label}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                disabled={selectedSaved.length === 0 || bulking}
+                className="inline-flex items-center h-8 px-3 rounded-md font-mono text-xs font-semibold uppercase tracking-wide bg-secondary text-secondary-foreground hover:bg-secondary/70 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+              >
+                Set status {selectedSaved.length || ""}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {PRODUCT_STATUSES.map((s) => (
+                  <DropdownMenuItem key={s.value} onClick={() => handleBulkStatus(s.value)} className="gap-2">
+                    <span className={cn("size-2 rounded-full shrink-0", s.swatch)} /> {s.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col gap-3">
         <div className="relative">
@@ -393,7 +590,7 @@ export default function CatalogPage() {
             <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="newest">Newest</SelectItem>
-              <SelectItem value="title">Title A-Z</SelectItem>
+              <SelectItem value="game">Game A-Z</SelectItem>
               <SelectItem value="price-low">Price: Low</SelectItem>
               <SelectItem value="price-high">Price: High</SelectItem>
             </SelectContent>
@@ -461,6 +658,7 @@ export default function CatalogPage() {
               // bound the further down the grid a card sits. Capped so a
               // long page's tail doesn't drag the entrance out.
               const delayMs = Math.min(i % PAGE_SIZE, 24) * 12;
+              const key = itemKey(item);
               return item.kind === "saved" ? (
                 <ProductCard
                   key={`p-${item.id}`}
@@ -468,6 +666,9 @@ export default function CatalogPage() {
                   onClick={() => openEdit(item)}
                   onStatusChange={upsertLocal}
                   animationDelayMs={delayMs}
+                  selectMode={selectMode}
+                  selected={selectedKeys.has(key)}
+                  onToggleSelect={() => toggleSelect(item)}
                 />
               ) : (
                 <DiscoveredPrintCard
@@ -477,6 +678,9 @@ export default function CatalogPage() {
                   onSaved={upsertLocal}
                   onHidden={hideDiscovered}
                   animationDelayMs={delayMs}
+                  selectMode={selectMode}
+                  selected={selectedKeys.has(key)}
+                  onToggleSelect={() => toggleSelect(item)}
                 />
               );
             })}
@@ -528,6 +732,7 @@ export default function CatalogPage() {
         onSaved={upsertLocal}
         onDeleted={removeLocal}
       />
+      <ImportDialog open={importOpen} onOpenChange={setImportOpen} games={games} onImported={upsertLocal} />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { Checkbox } from "@/components/ui/checkbox";
 import { StatusQuickSelect } from "@/components/status-quick-select";
 import { RatingRow } from "@/components/rating-row";
 import { PersonalRating } from "@/components/personal-rating";
@@ -13,14 +14,21 @@ export function ProductCard({
   onClick,
   onStatusChange,
   animationDelayMs,
+  selectMode,
+  selected,
+  onToggleSelect,
 }: {
   product: Product;
   onClick: () => void;
   onStatusChange: (p: Product) => void;
   /** Staggers this card's entrance animation relative to its grid siblings. */
   animationDelayMs?: number;
+  selectMode?: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
 }) {
   const tags: string[] = product.tags ? JSON.parse(product.tags) : [];
+  const handleClick = selectMode ? onToggleSelect ?? onClick : onClick;
 
   return (
     // A div, not a button: StatusQuickSelect below needs its own interactive
@@ -28,12 +36,15 @@ export function ProductCard({
     <div
       role="button"
       tabIndex={0}
-      onClick={onClick}
+      onClick={handleClick}
       onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); }
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClick?.(); }
       }}
       style={animationDelayMs ? { animationDelay: `${animationDelayMs}ms` } : undefined}
-      className="card-enter tick-corners group flex flex-col rounded-lg border border-border bg-card overflow-hidden hover:border-primary/60 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className={cn(
+        "card-enter tick-corners group flex flex-col rounded-lg border bg-card overflow-hidden transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        selected ? "border-primary ring-1 ring-primary" : "border-border hover:border-primary/60"
+      )}
     >
       <div className="relative aspect-[4/3] bg-muted">
         {product.thumbnailUrl ? (
@@ -46,6 +57,14 @@ export function ProductCard({
         <span className="absolute top-2 left-2 rounded-sm bg-popover/90 backdrop-blur px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wide text-popover-foreground ring-1 ring-foreground/10">
           {product.siteName ?? product.domain}
         </span>
+        {selectMode && (
+          <div
+            className="absolute bottom-2 left-2 p-0.5 rounded-sm bg-popover/90 backdrop-blur ring-1 ring-foreground/10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Checkbox checked={!!selected} onCheckedChange={() => onToggleSelect?.()} />
+          </div>
+        )}
       </div>
 
       <div className="p-3 flex flex-col gap-1.5 flex-1">

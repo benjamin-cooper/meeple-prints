@@ -19,12 +19,29 @@ import { PersonalRating } from "@/components/personal-rating";
 import { PRODUCT_TYPES, PRODUCT_STATUSES } from "@/lib/constants";
 import type { GameSummary, Product } from "@/lib/types";
 
+/** Enough of a search result to pre-fill the form, skipping the usual paste-a-link-and-fetch step. */
+export interface ProductPrefill {
+  url: string;
+  title: string;
+  thumbnailUrl: string | null;
+  domain: string;
+  siteName: string;
+  creator: string | null;
+  price: number | null;
+  isFree: boolean;
+  type: string;
+  rating: number | null;
+  ratingCount: number | null;
+  likesCount: number | null;
+}
+
 interface ProductDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   games: GameSummary[];
   product?: Product | null;
   defaultGameId?: number;
+  prefill?: ProductPrefill;
   onSaved: (product: Product) => void;
   onDeleted?: (productId: number) => void;
 }
@@ -45,6 +62,12 @@ interface FormState {
   notes: string;
   tags: string;
   gameIds: number[];
+  // Not shown in the form itself -- carried through untouched from a saved
+  // product (edit) or a search-result prefill (add), same site-side rating
+  // data DiscoveredPrintCard's direct-save path already preserves.
+  siteRating: number | null;
+  siteRatingCount: number | null;
+  siteLikesCount: number | null;
 }
 
 // Base UI's <Select.Value> only knows an item's label once the popup has
@@ -52,7 +75,7 @@ interface FormState {
 const TYPE_ITEMS = Object.fromEntries(PRODUCT_TYPES.map((t) => [t.value, t.label]));
 const STATUS_ITEMS = Object.fromEntries(PRODUCT_STATUSES.map((s) => [s.value, s.label]));
 
-function buildInitialForm(product: Product | null | undefined, defaultGameId?: number): FormState {
+function buildInitialForm(product: Product | null | undefined, defaultGameId?: number, prefill?: ProductPrefill): FormState {
   if (product) {
     return {
       url: product.url,
@@ -70,12 +93,38 @@ function buildInitialForm(product: Product | null | undefined, defaultGameId?: n
       notes: product.notes ?? "",
       tags: product.tags ? (JSON.parse(product.tags) as string[]).join(", ") : "",
       gameIds: product.games.map((g) => g.id),
+      siteRating: product.siteRating,
+      siteRatingCount: product.siteRatingCount,
+      siteLikesCount: product.siteLikesCount,
+    };
+  }
+  if (prefill) {
+    return {
+      url: prefill.url,
+      title: prefill.title,
+      description: "",
+      thumbnailUrl: prefill.thumbnailUrl ?? "",
+      domain: prefill.domain,
+      siteName: prefill.siteName,
+      type: prefill.type,
+      creator: prefill.creator ?? "",
+      price: prefill.price != null ? String(prefill.price) : "",
+      isFree: prefill.isFree,
+      status: "wishlist",
+      rating: null,
+      notes: "",
+      tags: "",
+      gameIds: defaultGameId ? [defaultGameId] : [],
+      siteRating: prefill.rating,
+      siteRatingCount: prefill.ratingCount,
+      siteLikesCount: prefill.likesCount,
     };
   }
   return {
     url: "", title: "", description: "", thumbnailUrl: "", domain: "", siteName: "",
     type: "other", creator: "", price: "", isFree: false, status: "wishlist",
     rating: null, notes: "", tags: "", gameIds: defaultGameId ? [defaultGameId] : [],
+    siteRating: null, siteRatingCount: null, siteLikesCount: null,
   };
 }
 
@@ -85,13 +134,13 @@ function buildInitialForm(product: Product | null | undefined, defaultGameId?: n
  * brand new "add", is opened, instead of syncing state via an effect.
  */
 function ProductForm({
-  product, games, defaultGameId, onOpenChange, onSaved, onDeleted,
+  product, games, defaultGameId, prefill, onOpenChange, onSaved, onDeleted,
 }: Omit<ProductDialogProps, "open">) {
-  const [form, setForm] = useState<FormState>(() => buildInitialForm(product, defaultGameId));
+  const [form, setForm] = useState<FormState>(() => buildInitialForm(product, defaultGameId, prefill));
   const [fetching, setFetching] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [fetched, setFetched] = useState(!!product);
+  const [fetched, setFetched] = useState(!!product || !!prefill);
 
   const isEdit = !!product;
 
@@ -152,6 +201,9 @@ function ProductForm({
         notes: form.notes.trim() || null,
         tags: tags.length ? tags : null,
         gameIds: form.gameIds,
+        siteRating: form.siteRating,
+        siteRatingCount: form.siteRatingCount,
+        siteLikesCount: form.siteLikesCount,
       };
 
       const res = await fetch(isEdit ? `/api/products/${product!.id}` : "/api/products", {
@@ -363,15 +415,16 @@ function ProductForm({
   );
 }
 
-export function ProductDialog({ open, onOpenChange, games, product, defaultGameId, onSaved, onDeleted }: ProductDialogProps) {
+export function ProductDialog({ open, onOpenChange, games, product, defaultGameId, prefill, onSaved, onDeleted }: ProductDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
         <ProductForm
-          key={`${product?.id ?? "new"}-${defaultGameId ?? "none"}-${open ? "o" : "c"}`}
+          key={`${product?.id ?? "new"}-${defaultGameId ?? "none"}-${prefill?.url ?? "none"}-${open ? "o" : "c"}`}
           product={product}
           games={games}
           defaultGameId={defaultGameId}
+          prefill={prefill}
           onOpenChange={onOpenChange}
           onSaved={onSaved}
           onDeleted={onDeleted}

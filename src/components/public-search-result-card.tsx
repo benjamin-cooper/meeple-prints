@@ -1,11 +1,20 @@
 import Image from "next/image";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { RatingRow } from "@/components/rating-row";
 import { typeLabel } from "@/lib/constants";
 import { guessTypeFromTitle } from "@/lib/providers/guess-type";
 import type { ProviderResult } from "@/lib/providers/types";
 
-/** Read-only result card for the public search tool: no save action, no game context. */
-export function PublicSearchResultCard({ result, siteName }: { result: ProviderResult; siteName: string }) {
+interface PublicSearchResultCardProps {
+  result: ProviderResult;
+  siteName: string;
+  /** Omit to render read-only (no save button) -- kept optional so this card has no hard dependency on a catalog to save into. */
+  onAdd?: () => void;
+  alreadySaved?: boolean;
+}
+
+export function PublicSearchResultCard({ result, siteName, onAdd, alreadySaved }: PublicSearchResultCardProps) {
   const type = guessTypeFromTitle(result.title);
 
   return (
@@ -32,6 +41,11 @@ export function PublicSearchResultCard({ result, siteName }: { result: ProviderR
           </span>
           <span className="text-[11px] text-muted-foreground font-mono">{typeLabel(type)}</span>
         </div>
+        {onAdd && (
+          <Button size="sm" variant={alreadySaved ? "secondary" : "default"} className="gap-1.5" disabled={alreadySaved} onClick={onAdd}>
+            <Plus className="size-3.5" /> {alreadySaved ? "In catalog" : "Add to catalog"}
+          </Button>
+        )}
       </div>
     </div>
   );

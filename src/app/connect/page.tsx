@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
+import { TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +13,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { cn, timeAgo } from "@/lib/utils";
+import { isNoisyGame } from "@/lib/constants";
+import type { Game } from "@/lib/types";
 
 interface Settings {
   connected: boolean;
@@ -55,10 +59,16 @@ export default function ConnectPage() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [selectedDropped, setSelectedDropped] = useState<Set<number>>(new Set());
   const [deletingDropped, setDeletingDropped] = useState(false);
+  const [noisyGames, setNoisyGames] = useState<Game[] | null>(null);
 
   const refresh = () => fetch("/api/settings").then((r) => r.json()).then(setSettings);
 
   useEffect(() => { refresh(); }, []);
+  useEffect(() => {
+    fetch("/api/games")
+      .then((r) => r.json())
+      .then((games: Game[]) => setNoisyGames(games.filter((g) => g.inCollection && isNoisyGame(g.discoveredStats))));
+  }, []);
   // Date.now() can't be called during render (impure); read it once after mount instead.
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setNow(Date.now()), []);
@@ -295,6 +305,27 @@ export default function ConnectPage() {
           </div>
         );
       })()}
+
+      {settings.connected && noisyGames !== null && noisyGames.length > 0 && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm font-semibold flex items-center gap-1.5">
+              <TriangleAlert className="size-4 text-destructive" /> Catalog health
+            </p>
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-semibold uppercase tracking-wide px-2 py-0.5 rounded-sm border border-destructive/30 text-destructive bg-destructive/5">
+              <span className="size-1.5 rounded-full bg-destructive animate-pulse" />
+              {noisyGames.length} noisy
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {noisyGames.length === 1 ? "1 game has" : `${noisyGames.length} games have`} more than half its found
+            results hidden as noise -- worth a look for a new collision or content-type exclusion.
+          </p>
+          <Link href="/games?sort=noisy" className="text-xs text-destructive underline underline-offset-4 font-medium">
+            Review noisiest games →
+          </Link>
+        </div>
+      )}
 
       <div className="space-y-3">
         <div>

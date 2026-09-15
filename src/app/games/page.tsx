@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Search, TriangleAlert } from "lucide-react";
@@ -12,10 +13,26 @@ import { isNoisyGame } from "@/lib/constants";
 
 type SortMode = "gaps" | "noisy" | "name";
 
+function isSortMode(value: string | null): value is SortMode {
+  return value === "gaps" || value === "noisy" || value === "name";
+}
+
 export default function GamesPage() {
+  return (
+    <Suspense>
+      <GamesPageContent />
+    </Suspense>
+  );
+}
+
+function GamesPageContent() {
+  const searchParams = useSearchParams();
   const [games, setGames] = useState<Game[] | null>(null);
   const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<SortMode>("gaps");
+  const [sort, setSort] = useState<SortMode>(() => {
+    const fromUrl = searchParams.get("sort");
+    return isSortMode(fromUrl) ? fromUrl : "gaps";
+  });
 
   useEffect(() => {
     fetch("/api/games").then((r) => r.json()).then(setGames);

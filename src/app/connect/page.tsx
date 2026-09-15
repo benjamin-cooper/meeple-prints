@@ -37,10 +37,13 @@ const CRON_STALE_AFTER_MS = 30 * 60 * 60 * 1000; // 30h -- a day plus a buffer f
 
 interface ProviderEnvStatus {
   label: string;
+  domain: string;
   configured: boolean;
   envVars: string;
   instructions: React.ReactNode;
 }
+
+type TestResult = { ok: true; count: number } | { ok: false; error: string };
 
 function formatDate(iso: string | null) {
   if (!iso) return "Never";
@@ -60,6 +63,8 @@ export default function ConnectPage() {
   const [selectedDropped, setSelectedDropped] = useState<Set<number>>(new Set());
   const [deletingDropped, setDeletingDropped] = useState(false);
   const [noisyGames, setNoisyGames] = useState<Game[] | null>(null);
+  const [testing, setTesting] = useState<string | null>(null);
+  const [testResults, setTestResults] = useState<Record<string, TestResult>>({});
 
   const refresh = () => fetch("/api/settings").then((r) => r.json()).then(setSettings);
 
@@ -121,6 +126,38 @@ export default function ConnectPage() {
     }
   };
 
+  /**
+   * Reuses the public search endpoint instead of a bespoke test route --
+   * it already runs every provider independently and reports each one's
+   * own error, so this just reads back the one domain being tested. A
+   * "Configured" badge only means the env var is set; this is the only way
+   * to know the credential actually still works (expired token, revoked
+   * key) without waiting to notice missing results during a real scan.
+   */
+  const handleTestConnection = async (domain: string) => {
+    setTesting(domain);
+    try {
+      const res = await fetch("/api/public-search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: "board game insert" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Test failed.");
+      const outcome = (data.providers as { domain: string; error: string | null; results: unknown[] }[])
+        .find((p) => p.domain === domain);
+      if (!outcome) throw new Error("No response from that provider.");
+      setTestResults((prev) => ({
+        ...prev,
+        [domain]: outcome.error ? { ok: false, error: outcome.error } : { ok: true, count: outcome.results.length },
+      }));
+    } catch (err) {
+      setTestResults((prev) => ({ ...prev, [domain]: { ok: false, error: err instanceof Error ? err.message : "Test failed." } }));
+    } finally {
+      setTesting(null);
+    }
+  };
+
   const toggleDropped = (id: number) => {
     setSelectedDropped((prev) => {
       const next = new Set(prev);
@@ -159,6 +196,7 @@ export default function ConnectPage() {
   const providerStatuses: ProviderEnvStatus[] = [
     {
       label: "Thingiverse",
+      domain: "thingiverse.com",
       configured: settings.hasThingiverseToken,
       envVars: "THINGIVERSE_TOKEN",
       instructions: (
@@ -173,6 +211,7 @@ export default function ConnectPage() {
     },
     {
       label: "Cults3D",
+      domain: "cults3d.com",
       configured: settings.hasCultsCredentials,
       envVars: "CULTS_USERNAME, CULTS_API_KEY",
       instructions: (
@@ -187,6 +226,7 @@ export default function ConnectPage() {
     },
     {
       label: "Etsy",
+      domain: "etsy.com",
       configured: settings.hasEtsyApiKey,
       envVars: "ETSY_KEYSTRING, ETSY_SHARED_SECRET",
       instructions: (
@@ -202,6 +242,7 @@ export default function ConnectPage() {
     },
     {
       label: "MyMiniFactory",
+      domain: "myminifactory.com",
       configured: settings.hasMyMiniFactoryApiKey,
       envVars: "MYMINIFACTORY_API_KEY",
       instructions: (
@@ -338,21 +379,49 @@ export default function ConnectPage() {
         </div>
 
         <div className="rounded-lg border border-border bg-card divide-y divide-border">
-          {providerStatuses.map((p) => (
-            <div key={p.label} className="p-4 space-y-1.5">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-semibold">{p.label}</span>
-                <span className={cn(
-                  "inline-flex items-center gap-1.5 text-[11px] font-mono font-semibold uppercase tracking-wide px-2 py-0.5 rounded-sm border",
-                  p.configured ? "border-status-printed/30 text-status-printed bg-status-printed/5" : "border-border text-muted-foreground bg-muted/40"
-                )}>
-                  <span className={cn("size-1.5 rounded-full", p.configured ? "bg-status-printed" : "bg-muted-foreground")} />
-                  {p.configured ? "Configured" : "Not Configured"}
-                </span>
+          {providerStatuses.map((p) => {
+            const result = testResults[p.domain];
+            return (
+              <div key={p.label} className="p-4 space-y-1.5">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-semibold">{p.label}</span>
+                  <div className="flex items-center gap-2">
+                    <span className={cn(
+                      "inline-flex items-center gap-1.5 text-[11px] font-mono font-semibold uppercase tracking-wide px-2 py-0.5 rounded-sm border",
+                      p.configured ? "border-status-printed/30 text-status-printed bg-status-printed/5" : "border-border text-muted-foreground bg-muted/40"
+                    )}>
+                      <span className={cn("size-1.5 rounded-full", p.configured ? "bg-status-printed" : "bg-muted-foreground")} />
+                      {p.configured ? "Configured" : "Not Configured"}
+                    </span>
+                    {p.configured && (
+                      <button
+                        onClick={() => handleTestConnection(p.domain)}
+                        disabled={testing === p.domain}
+                        className="text-[11px] font-medium text-muted-foreground hover:text-foreground underline underline-offset-4 disabled:opacity-50"
+                      >
+                        {testing === p.domain ? "Testing…" : "Test"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {!p.configured && <p className="text-xs text-muted-foreground">{p.instructions}</p>}
+                {result && (
+                  <div className="flex items-center gap-1.5">
+                    <span className={cn(
+                      "inline-flex items-center gap-1.5 text-[11px] font-mono font-semibold uppercase tracking-wide px-2 py-0.5 rounded-sm border",
+                      result.ok ? "border-status-printed/30 text-status-printed bg-status-printed/5" : "border-destructive/30 text-destructive bg-destructive/5"
+                    )}>
+                      <span className={cn("size-1.5 rounded-full", result.ok ? "bg-status-printed" : "bg-destructive")} />
+                      {result.ok ? "Verified" : "Failed"}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {result.ok ? `${result.count} result${result.count === 1 ? "" : "s"} for a test search.` : result.error}
+                    </span>
+                  </div>
+                )}
               </div>
-              {!p.configured && <p className="text-xs text-muted-foreground">{p.instructions}</p>}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

@@ -363,7 +363,7 @@ export default function ConnectPage() {
             results hidden as noise -- worth a look for a new collision or content-type exclusion.
           </p>
           <Link href="/games?sort=noisy" className="text-xs text-destructive underline underline-offset-4 font-medium">
-            Review noisiest games →
+            Review the noisiest games
           </Link>
         </div>
       )}

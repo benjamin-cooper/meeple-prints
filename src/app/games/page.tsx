@@ -79,13 +79,13 @@ function GamesPageContent() {
           ) : (
             <>
               {gapCount > 0
-                ? `${gapCount} game${gapCount === 1 ? " has" : "s have"} no prints saved yet`
+                ? `${gapCount} game${gapCount === 1 ? " has" : "s have"} no prints saved yet.`
                 : "Every game in your collection has at least one saved print."}
               {noisyCount > 0 && (
                 <>
-                  {" · "}
+                  {" "}
                   <span className="text-destructive font-medium">
-                    {noisyCount} game{noisyCount === 1 ? " is" : "s are"} mostly noise
+                    {noisyCount} game{noisyCount === 1 ? " is" : "s are"} mostly noise.
                   </span>
                 </>
               )}

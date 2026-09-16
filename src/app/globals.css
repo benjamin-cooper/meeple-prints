@@ -217,6 +217,18 @@
   animation: card-enter 0.35s ease-out both;
 }
 
+/* A moving carriage, not a spinner -- answers the one user action ("Scan
+   now") that has no real progress to report, since the batch runs
+   server-side as a single request. Sized and eased like a print head
+   traversing a line rather than a generic indeterminate loading bar. */
+@keyframes scan-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+.scan-sweep {
+  animation: scan-sweep 1.1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

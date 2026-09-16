@@ -428,14 +428,20 @@ export default function CatalogPage() {
             )}
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            {items === null ? "Loading…" : `${filtered.length} of ${items.length} print${items.length === 1 ? "" : "s"}`}
-            {collectionGames.length > 0 && ` (${scannedCount} of ${collectionGames.length} games scanned)`}
-            {hiddenCount > 0 && (
+            {items === null ? (
+              "Loading…"
+            ) : (
               <>
-                {" · "}
-                <Link href="/hidden" className="underline underline-offset-4 hover:text-foreground">
-                  {hiddenCount} hidden
-                </Link>
+                {filtered.length} of {items.length} print{items.length === 1 ? "" : "s"}
+                {collectionGames.length > 0 && `, ${scannedCount} of ${collectionGames.length} games scanned`}.
+                {hiddenCount > 0 && (
+                  <>
+                    {" "}
+                    <Link href="/hidden" className="underline underline-offset-4 hover:text-foreground">
+                      {hiddenCount} hidden
+                    </Link>.
+                  </>
+                )}
               </>
             )}
           </p>
@@ -459,9 +465,16 @@ export default function CatalogPage() {
           <Button variant="outline" className="gap-1.5" onClick={() => setImportOpen(true)}>
             <Upload className="size-4" /> Import
           </Button>
-          <Button variant="secondary" onClick={handleScanNow} disabled={scanning} className="gap-1.5">
-            <RefreshCw className={cn("size-4", scanning && "animate-spin")} /> {scanning ? "Scanning…" : "Scan now"}
-          </Button>
+          <div className="relative">
+            <Button variant="secondary" onClick={handleScanNow} disabled={scanning} className="gap-1.5">
+              <RefreshCw className="size-4" /> {scanning ? "Scanning…" : "Scan now"}
+            </Button>
+            {scanning && (
+              <div className="absolute left-2 right-2 -bottom-1 h-0.5 overflow-hidden rounded-full bg-primary/15">
+                <div className="scan-sweep h-full w-1/4 rounded-full bg-primary" />
+              </div>
+            )}
+          </div>
           <Button onClick={openAdd} className="gap-1.5">
             <Plus className="size-4" /> Add a print
           </Button>

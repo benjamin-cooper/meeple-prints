@@ -63,7 +63,11 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // username on these sites, which naturally collides with both "Falling"
   // and "Entropy" since it contains both words.
   Falling: /under falling skies|chainsaw man|falling entropy/i,
-  Speakeasy: /murder mystery|speakeasy arms/i,
+  // "prohibition"/"roaring 20s"/"art deco"/"gatsby" added in the fourteenth
+  // audit -- the same 1920s-speakeasy party/decor genre as "murder
+  // mystery" above, just a different corner of it (calendars, party decor,
+  // rather than mystery-party kits).
+  Speakeasy: /murder mystery|speakeasy arms|prohibition|roaring 20s|art deco|gatsby/i,
   // "charred earth"/"earth day"/"happiest place on earth" added in the
   // fifth audit -- a wargaming terrain term, the environmental holiday,
   // and the Disney tagline, respectively. Broadened to bare "disney(land)"
@@ -90,8 +94,11 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // using "Daybreak" as a product/character/model name.
   Daybreak: /\bnerf\b|airsoft|league of legends|\bleona\b|kamen rider|mu online|\bvoron\b|nike undercover/i,
   // "a-team"/"scooby"/"doctor who"/"paternoster"/"little rascals"/
-  // "freshies"/"villain gang" added in the fifth audit.
-  "The Gang": /\ba-team\b|\bscooby\b|doctor who|paternoster|little rascals|\bfreshies\b|villain gang/i,
+  // "freshies"/"villain gang" added in the fifth audit. "girl gang"/
+  // "raccoon gang"/"dachshund gang" added in the fourteenth -- "gang" is
+  // a common cutesy suffix for people/pet-group merchandise, same shape
+  // as "villain gang" above.
+  "The Gang": /\ba-team\b|\bscooby\b|doctor who|paternoster|little rascals|\bfreshies\b|villain gang|girl gang|raccoon gang|dachshund gang/i,
   // "tyres?/tires?" added in the fifth audit -- Yokohama is a real tire
   // brand, which turned out to be the dominant collision (Porsche racing
   // wheels, tire logos), plus travel-guide content for the actual city.
@@ -201,4 +208,8 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // Castle"), so a currently-correct result legitimately uses that
   // vocabulary; this only targets the unambiguous Disney/fairytale terms.
   "The White Castle": /disney|unicorn|evil queen|coquette/i,
+  // Added in the fourteenth audit -- "Res Arcana" collides with tarot's own
+  // "Major Arcana" terminology, so Etsy surfaces genuine tarot decks on
+  // name alone.
+  "Res Arcana": /tarot|major arcana/i,
 };

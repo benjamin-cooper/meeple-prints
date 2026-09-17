@@ -78,6 +78,11 @@ export const NON_3D_PRINT_TERM_GROUPS: ExclusionGroup[] = [
       "e-?books?", "biograph(y|ies)", "stud(y|ies)\\s*guides?", "workbooks?",
       "homeschool", "activity books?", "flash\\s*cards?", "\\ba level\\b",
       "(piano\\s*)?sheet music",
+      // "worksheets?" added in the fourteenth audit -- therapy/counseling
+      // and classroom worksheet content, same shape as the study-guide/
+      // workbook terms already here. Verified against every currently-
+      // visible row -- zero false positives.
+      "worksheets?",
     ],
   },
   {
@@ -88,7 +93,15 @@ export const NON_3D_PRINT_TERM_GROUPS: ExclusionGroup[] = [
     category: "product/book covers & branding",
     terms: ["book covers?", "\\blogos?\\b"],
   },
-  { category: "apparel/sublimation graphics", terms: ["sublimation"] },
+  {
+    // "shirt design"/"t-shirt" and the tumbler/cup-wrap terms added in the
+    // fourteenth audit -- both are recurring Etsy sublimation-craft genres
+    // (shirt graphics, sublimation tumbler/can wraps) that happened to
+    // match a game's name in passing. Verified against every currently-
+    // visible row -- zero false positives.
+    category: "apparel/sublimation graphics",
+    terms: ["sublimation", "shirt designs?", "t-?shirts?", "tumblers?", "cup wraps?", "can wraps?"],
+  },
   { category: "digital scrapbooking", terms: ["canva", "digital papers?( packs?)?"] },
   {
     category: "Twitch/OBS streaming-overlay content",
@@ -103,9 +116,14 @@ export const NON_3D_PRINT_TERM_GROUPS: ExclusionGroup[] = [
     terms: [
       "mockups?", "(procreate|photoshop|ps)\\s*brush(es)?", "brushe?s?:?\\s*(procreate|photoshop)",
       "photoshop overlays?", "photo overlays?", "lightroom presets?", "stock photos?",
+      // Bare "png" added in the fourteenth audit -- a real STL/3D-print
+      // seller says "STL"/"3MF"/"3D print files", never the raster image
+      // format a flat digital-art listing ships as. Verified against every
+      // currently-visible row across every game -- zero false positives.
+      "\\bpng\\b",
     ],
   },
-  { category: "device wallpapers", terms: ["(phone|tablet|ipad|desktop)\\s*(wallpaper|background)s?"] },
+  { category: "device wallpapers", terms: ["(phone|tablet|ipad|watch|desktop)\\s*(wallpaper|background)s?"] },
   { category: "recipes", terms: ["recipes?"] },
   { category: "font files", terms: ["fonts?"] },
   { category: "audio downloads", terms: ["\\bmp3\\b"] },

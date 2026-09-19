@@ -149,6 +149,10 @@ export const NON_3D_PRINT_TERM_GROUPS: ExclusionGroup[] = [
       "\\blds\\b", "come follow me", "\\bbible\\b", "\\bjesus\\b", "\\bchristian\\b", "\\bprayer\\b",
       "\\bscripture", "sunday school", "devotional", "\\bbaptism", "communion", "\\bgospel\\b", "\\bpsalm",
       "abrahamic covenant",
+      // "young women" added in the fourteenth audit -- the actual name of
+      // the LDS youth program ("Young Women's lesson"), same LDS-specific
+      // shape as "come follow me" above.
+      "young women",
     ],
   },
   {

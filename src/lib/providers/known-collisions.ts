@@ -114,8 +114,14 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // generic fantasy/sci-fi terrain with no single unifying vocabulary
   // (unlike Earth/Sand/etc above), so only the identifiable franchise
   // names could safely be excluded; the rest stays in the unfixable
-  // bucket.
-  Sanctuary: /cthulhu|sisters of battle|sky children of (the )?light|rocamadour/i,
+  // bucket. "wargaming terrain"/"tabletop terrain"/"dnd"/"rpg scenery"/
+  // "scatter terrain" added in the fourteenth audit -- these ARE real 3D-
+  // print STL files (unlike the rest of this file's non-3d-print
+  // exclusions), just for generic D&D/wargaming terrain rather than this
+  // specific game. Checked against Sanctuary's own 5 currently-correct
+  // results first -- none use this vocabulary, they're all plain
+  // Insert/Organizer/Dice Tray listings.
+  Sanctuary: /cthulhu|sisters of battle|sky children of (the )?light|rocamadour|wargaming terrain|tabletop terrain|\bdnd\b|d&d|rpg scenery|scatter terrain/i,
   // Entropy has zero currently-correct results ever, same as "Sand" --
   // it's a real thermodynamics term, so the noise splits between literal
   // physics/chemistry content ("T-s diagram", "enthalpy") and several
@@ -142,10 +148,13 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // Falling/Entropy. "Ulvheim" and "Citadel" are the only two
   // identifiable, safely-excludable brand names in the noise (a specific
   // terrain product line and Games Workshop's own miniatures brand,
-  // respectively) -- the rest is generic fantasy/wargaming terrain with no
-  // single unifying vocabulary to key off of, same as Sanctuary's
-  // unfixable remainder.
-  Ruins: /\bulvheim\b|\bcitadel\b/i,
+  // respectively). Revisited in the fourteenth audit: a fresh batch of
+  // "wrong game" tags turned out to share real vocabulary after all --
+  // "wargaming terrain"/"tabletop terrain"/"DnD"/"RPG scenery"/"scatter
+  // terrain" -- so the "no unifying vocabulary" call above no longer
+  // fully holds. Safe to add since this game still has zero currently-
+  // correct results to protect.
+  Ruins: /\bulvheim\b|\bcitadel\b|wargaming terrain|tabletop terrain|\bdnd\b|d&d|rpg scenery|scatter terrain/i,
   // Added in the ninth audit -- "Ants" has zero currently-correct results
   // ever, same shape as Sand/Entropy/Ruins: it's a real insect, so Etsy/
   // Printables/Thingiverse/Cults3D surface actual ant-keeping/pest-control
@@ -207,7 +216,10 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // the game itself is about Himeji Castle (nicknamed "White Heron
   // Castle"), so a currently-correct result legitimately uses that
   // vocabulary; this only targets the unambiguous Disney/fairytale terms.
-  "The White Castle": /disney|unicorn|evil queen|coquette/i,
+  // "cinderella castle" added in the fourteenth audit -- Disney's actual
+  // Magic Kingdom castle name, same shape as the other Disney terms here
+  // but doesn't contain the literal word "disney".
+  "The White Castle": /disney|unicorn|evil queen|coquette|cinderella castle/i,
   // Added in the fourteenth audit -- "Res Arcana" collides with tarot's own
   // "Major Arcana" terminology, so Etsy surfaces genuine tarot decks on
   // name alone.

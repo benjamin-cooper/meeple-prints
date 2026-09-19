@@ -3,13 +3,22 @@
 import { Suspense, useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Search } from "lucide-react";
+import { Search, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { SITE_LABELS, HIDE_REASONS, hideReasonLabel } from "@/lib/constants";
 import { HIDE_REASON_ICONS } from "@/lib/hide-reason-icons";
+import { cn } from "@/lib/utils";
+
+type AutoExplanation = "collision" | "not-3d-print" | "duplicate" | null;
+
+const AUTO_EXPLANATION_LABELS: Record<Exclude<AutoExplanation, null>, string> = {
+  collision: "Collision rule",
+  "not-3d-print": "Content-type rule",
+  duplicate: "Duplicate rule",
+};
 
 interface HiddenPrint {
   id: number;
@@ -18,6 +27,7 @@ interface HiddenPrint {
   domain: string;
   siteName: string | null;
   hideReason: string | null;
+  autoExplanation: AutoExplanation;
   game: { id: number; name: string };
 }
 
@@ -34,6 +44,7 @@ function HiddenPageContent() {
   const [items, setItems] = useState<HiddenPrint[] | null>(null);
   const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
   const [reasonFilter, setReasonFilter] = useState<string>("all");
+  const [coverageFilter, setCoverageFilter] = useState<string>("all");
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [unhiding, setUnhiding] = useState<number | "bulk" | null>(null);
 
@@ -41,20 +52,33 @@ function HiddenPageContent() {
     fetch("/api/catalog/hidden").then((r) => r.json()).then(setItems);
   }, []);
 
+  const needsReviewCount = useMemo(
+    () => items?.filter((i) => !i.autoExplanation).length ?? 0,
+    [items]
+  );
+
   const filtered = useMemo(() => {
     if (!items) return [];
     const q = query.trim().toLowerCase();
     return items.filter((i) => {
       if (reasonFilter !== "all" && (i.hideReason ?? "unlabeled") !== reasonFilter) return false;
+      if (coverageFilter === "needs-review" && i.autoExplanation) return false;
+      if (coverageFilter !== "all" && coverageFilter !== "needs-review" && i.autoExplanation !== coverageFilter) return false;
       if (q && !i.title.toLowerCase().includes(q) && !i.game.name.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [items, query, reasonFilter]);
+  }, [items, query, reasonFilter, coverageFilter]);
 
   const reasonItems = {
     all: "All reasons",
     ...Object.fromEntries(HIDE_REASONS.map((r) => [r.value, r.label])),
     unlabeled: "Unlabeled",
+  };
+
+  const coverageItems = {
+    all: "All",
+    "needs-review": "Needs review",
+    ...AUTO_EXPLANATION_LABELS,
   };
 
   const unhideIds = async (ids: number[]) => {
@@ -136,6 +160,18 @@ function HiddenPageContent() {
         <p className="text-sm text-muted-foreground mt-1">
           Prints dismissed as not relevant, or dropped automatically as a duplicate of a better-reviewed copy.
           Unhide one to bring it back into Catalog.
+          {items !== null && items.length > 0 && (
+            <>
+              {" "}
+              {needsReviewCount > 0 ? (
+                <span className="text-destructive font-medium">
+                  {needsReviewCount} of {items.length} have no rule explaining them yet -- worth a look for a new pattern.
+                </span>
+              ) : (
+                "Every hidden print is already explained by a shipped rule."
+              )}
+            </>
+          )}
         </p>
       </div>
 
@@ -163,6 +199,16 @@ function HiddenPageContent() {
                 <SelectItem value="all">All reasons</SelectItem>
                 {HIDE_REASONS.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
                 <SelectItem value="unlabeled">Unlabeled</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select items={coverageItems} value={coverageFilter} onValueChange={(v) => setCoverageFilter(v as string)}>
+              <SelectTrigger className="w-[150px]"><SelectValue placeholder="All" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="needs-review">Needs review</SelectItem>
+                {Object.entries(AUTO_EXPLANATION_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Button
@@ -201,6 +247,24 @@ function HiddenPageContent() {
                       </span>
                     );
                   })()}
+                  {item.autoExplanation ? (
+                    <span
+                      title="A shipped rule already covers this -- it won't come back on its own."
+                      className="shrink-0 text-[11px] font-mono px-1.5 py-0.5 rounded-full bg-status-printed/10 text-status-printed"
+                    >
+                      {AUTO_EXPLANATION_LABELS[item.autoExplanation]}
+                    </span>
+                  ) : (
+                    <span
+                      title="No shipped rule explains this yet -- it could come back on a future scan."
+                      className={cn(
+                        "shrink-0 inline-flex items-center gap-1 text-[11px] font-mono px-1.5 py-0.5 rounded-full",
+                        "bg-destructive/10 text-destructive"
+                      )}
+                    >
+                      <TriangleAlert className="size-3" /> Needs review
+                    </span>
+                  )}
                   <Button
                     variant="secondary"
                     size="sm"

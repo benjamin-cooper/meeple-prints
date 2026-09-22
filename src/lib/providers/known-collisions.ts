@@ -40,7 +40,10 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // fifth audit -- LDS/Mormon religious-education content ("covenant" is a
   // significant term in LDS theology), same collision shape as the
   // religious "Ark of the Covenant" content already excluded here.
-  Covenant: /halo|vhorlath|darkmoon|xenomorph|prometheus|\balien\b|ark of the covenant|indiana jones|\bneca\b|\blds\b|relief society|baptismal|general conference/i,
+  // "non-compete" added in the sixteenth audit -- "covenant" is real legal
+  // terminology for a binding contract clause, so Etsy surfaces non-compete
+  // agreement templates on name alone; two separate listings hit this.
+  Covenant: /halo|vhorlath|darkmoon|xenomorph|prometheus|\balien\b|ark of the covenant|indiana jones|\bneca\b|\blds\b|relief society|baptismal|general conference|non-?compete/i,
   // "kyosho"/"vfc"/"aeg"/"hpa"/"wolverine inferno" added in the fifth audit
   // -- Kyosho is an RC-car brand with an "Inferno" model line, and
   // VFC/AEG/HPA/Wolverine are airsoft-gun brands/terminology that all
@@ -102,7 +105,11 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // "tyres?/tires?" added in the fifth audit -- Yokohama is a real tire
   // brand, which turned out to be the dominant collision (Porsche racing
   // wheels, tire logos), plus travel-guide content for the actual city.
-  Yokohama: /\btyres?\b|\btires?\b|reiseführer|field guide/i,
+  // "hueforge" added in the sixteenth audit -- Yokohama is also a real
+  // Japanese city, and makers create HueForge (multi-color layered
+  // lithophane) art of its actual landmarks (Marine Tower, the Red Brick
+  // Warehouse) -- three separate listings hit this exact term.
+  Yokohama: /\btyres?\b|\btires?\b|reiseführer|field guide|hueforge/i,
   // Fromage collides with its own literal meaning -- French for "cheese" --
   // so almost everything found for it is real cheese-making equipment/
   // recipes rather than board-game accessories. Can't exclude on "fromage"
@@ -154,7 +161,10 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // terrain" -- so the "no unifying vocabulary" call above no longer
   // fully holds. Safe to add since this game still has zero currently-
   // correct results to protect.
-  Ruins: /\bulvheim\b|\bcitadel\b|wargaming terrain|tabletop terrain|\bdnd\b|d&d|rpg scenery|scatter terrain/i,
+  // "diorama"/"miniature terrain" added in the sixteenth audit -- more
+  // generic-terrain STL listings that don't happen to say "DnD"/
+  // "wargaming" but are the same real-3D-print-wrong-hobby shape.
+  Ruins: /\bulvheim\b|\bcitadel\b|wargaming terrain|tabletop terrain|\bdnd\b|d&d|rpg scenery|scatter terrain|\bdiorama\b|miniature terrain/i,
   // Added in the ninth audit -- "Ants" has zero currently-correct results
   // ever, same shape as Sand/Entropy/Ruins: it's a real insect, so Etsy/
   // Printables/Thingiverse/Cults3D surface actual ant-keeping/pest-control

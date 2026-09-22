@@ -83,6 +83,12 @@ export const NON_3D_PRINT_TERM_GROUPS: ExclusionGroup[] = [
       // workbook terms already here. Verified against every currently-
       // visible row -- zero false positives.
       "worksheets?",
+      // "escape room" promoted here in the sixteenth audit -- was Iliad-
+      // only (see known-collisions.ts's history), but a second, unrelated
+      // game (The Game Makers) just hit the same printable-puzzle-activity
+      // genre, so it's general Etsy content rather than one game's
+      // collision. Verified against every currently-visible row.
+      "escape rooms?",
     ],
   },
   {

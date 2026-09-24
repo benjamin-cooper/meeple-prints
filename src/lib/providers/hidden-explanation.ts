@@ -1,4 +1,4 @@
-import { KNOWN_COLLISION_EXCLUSIONS } from "./known-collisions";
+import { KNOWN_COLLISION_EXCLUSIONS, WARGAMING_SCALE_PATTERN } from "./known-collisions";
 import { NON_3D_PRINT_PATTERN } from "./non-3d-print-terms";
 import { findDuplicateIndices, type Dedupable } from "./dedupe";
 
@@ -26,6 +26,10 @@ export function explainHiddenRows(allRowsAcrossGames: RowForExplanation[]): Map<
     if (!r.hidden) continue;
     const collisionRe = KNOWN_COLLISION_EXCLUSIONS[r.gameName];
     if (collisionRe && collisionRe.test(r.title)) {
+      explained.set(r.id, "collision");
+      continue;
+    }
+    if (WARGAMING_SCALE_PATTERN.test(r.title)) {
       explained.set(r.id, "collision");
       continue;
     }

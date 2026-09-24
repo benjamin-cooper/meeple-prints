@@ -147,15 +147,16 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // exclusions), just for generic D&D/wargaming terrain rather than this
   // specific game. Checked against Sanctuary's own 5 currently-correct
   // results first -- none use this vocabulary, they're all plain
-  // Insert/Organizer/Dice Tray listings. Broadened to bare "terrain" and a
-  // "<N>mm scale" marker in the eighteenth audit -- the compound phrases
-  // above missed plain "Terrain Tiles (18mm scale)" listings; both are
-  // wargaming-miniature signals a real Sanctuary insert/organizer never
-  // uses. Re-verified against the same 5 correct results and the full
+  // Insert/Organizer/Dice Tray listings. Broadened to bare "terrain" in the
+  // eighteenth audit -- the compound phrases above missed plain "Terrain
+  // Tiles" listings; a real Sanctuary insert/organizer never uses this
+  // word. Re-verified against the same 5 correct results and the full
   // visible corpus -- bare "terrain" only otherwise matches a different
   // game's own real listing, unaffected since this exclusion is scoped to
-  // Sanctuary only.
-  Sanctuary: /cthulhu|sisters of battle|sky children of (the )?light|rocamadour|\bterrain\b|\bdnd\b|d&d|rpg scenery|\d+\s*mm scale/i,
+  // Sanctuary only. (The "<N>mm scale" half of that same collision was
+  // promoted to the general WARGAMING_SCALE_PATTERN below instead, since
+  // it isn't specific to Sanctuary.)
+  Sanctuary: /cthulhu|sisters of battle|sky children of (the )?light|rocamadour|\bterrain\b|\bdnd\b|d&d|rpg scenery/i,
   // Entropy has zero currently-correct results ever, same as "Sand" --
   // it's a real thermodynamics term, so the noise splits between literal
   // physics/chemistry content ("T-s diagram", "enthalpy") and several
@@ -273,3 +274,21 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // name alone.
   "Res Arcana": /tarot|major arcana/i,
 };
+
+/**
+ * Unlike everything above, this one isn't keyed to any single game's own
+ * vocabulary -- a "<N>mm scale" marker (28mm, 32mm, 18mm, ...) is generic
+ * tabletop-wargaming-miniature notation that has nothing to do with which
+ * game happens to share a search term with it. Promoted out of Sanctuary's
+ * own entry in the eighteenth audit after the same marker turned up as an
+ * unexplained hidden collision on a completely different game (Entropy --
+ * "The Lady of Entropy ... 32mm scale"), confirming it's a cross-game
+ * signal rather than a Sanctuary quirk. These ARE real 3D-print STL files,
+ * same as the terrain terms above -- just for generic wargaming miniatures
+ * rather than any specific board game. A real board-game insert/organizer
+ * listing has no reason to ever cite a miniature scale this way -- verified
+ * zero matches across all 1417 currently-visible results, every game.
+ * Applied in scan.ts to every game's default query, alongside (not instead
+ * of) any per-game KNOWN_COLLISION_EXCLUSIONS entry above.
+ */
+export const WARGAMING_SCALE_PATTERN = /\d+\s*mm\s*scale/i;

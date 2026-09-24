@@ -11,7 +11,7 @@ import { searchAllProviders } from "@/lib/providers";
 import { getProviderCredentials } from "@/lib/providers/env-credentials";
 import { guessTypeFromTitle } from "@/lib/providers/guess-type";
 import { findDuplicateIndices } from "@/lib/providers/dedupe";
-import { KNOWN_COLLISION_EXCLUSIONS } from "@/lib/providers/known-collisions";
+import { KNOWN_COLLISION_EXCLUSIONS, WARGAMING_SCALE_PATTERN } from "@/lib/providers/known-collisions";
 import { MISC_GAME_BGG_ID } from "@/lib/constants";
 
 /**
@@ -121,14 +121,16 @@ export async function scanGame(
   options?: { queries?: { term: string; extraFilter: ((title: string) => boolean) | null }[] }
 ) {
   // A regular game's default (single, bare-name) query applies its known-
-  // collision exclusion here if it has one (see known-collisions.ts) --
+  // collision exclusion here if it has one (see known-collisions.ts), plus
+  // the general cross-game WARGAMING_SCALE_PATTERN every game gets --
   // options.queries (the Miscellaneous game's curated term list) already
-  // carries its own per-term filters and isn't touched by this.
+  // carries its own per-term filters and isn't touched by either.
   const collisionExclusion = KNOWN_COLLISION_EXCLUSIONS[game.name];
   const queries = options?.queries ?? [
     {
       term: game.name,
-      extraFilter: collisionExclusion ? (title: string) => !collisionExclusion.test(title) : null,
+      extraFilter: (title: string) =>
+        (!collisionExclusion || !collisionExclusion.test(title)) && !WARGAMING_SCALE_PATTERN.test(title),
     },
   ];
   const creds = getProviderCredentials();

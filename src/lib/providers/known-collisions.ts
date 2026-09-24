@@ -63,7 +63,12 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // seventeenth audit -- "wwf" already covered the old name, but real WWE
   // tag-team wrestling content (belts, wrestler figures) uses the current
   // brand name and generic wrestling vocabulary instead.
-  "Tag Team": /pokemon go|heroquest|\bwwf\b|funko pop|\bwwe\b|wrestl|\busos\b|wrestlemania|tag team title/i,
+  // "tag team belts?" added in the eighteenth audit -- an AWA (a real
+  // wrestling promotion) title belt listing that the seventeenth audit's
+  // "tag team title" phrase didn't catch, since sellers also say "belts."
+  // Verified against Tag Team's own 2 currently-correct results and the
+  // full visible corpus -- zero false positives.
+  "Tag Team": /pokemon go|heroquest|\bwwf\b|funko pop|\bwwe\b|wrestl|\busos\b|wrestlemania|tag team title|tag team belts?/i,
   // "grinder"/"knucks"/"fgc9"/"anarchy symbol"/"cyber twins"/"no masters no
   // slaves" added in the seventeenth audit -- anarchism as a real
   // political/punk concept and symbol surfaces an unusually wide spread of
@@ -89,7 +94,11 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // ("Most Magical Place on Earth") showed up -- chasing each individual
   // tagline wasn't going to keep up with Disney's own marketing copy.
   Earth: /\bpuzzle\b|topograph|\bcoaster\b|\bglobe\b|\batlas\b|\belemental\b|\bepcot\b|spaceship earth|charred earth|earth day|happiest place on earth|disney(land)?/i,
-  Sand: /sand dune|sand castle|\bsandbox\b|kinetic sand|sand mold|sand play|sand scoop|sand dollar|sand ladder|sand jacuzzi|sand filter|sand clock/i,
+  // "spirograph"/"sand tools?"/"pattern rollers?" added in the eighteenth
+  // audit -- more of the same craft-supply/beach-toy genre as the rest of
+  // this list (Sand has zero real results ever). Verified against the full
+  // visible corpus -- zero false positives.
+  Sand: /sand dune|sand castle|\bsandbox\b|kinetic sand|sand mold|sand play|sand scoop|sand dollar|sand ladder|sand jacuzzi|sand filter|sand clock|spirograph|sand tools?|pattern rollers?/i,
   // "blueprints? for luthier"/"mayones" added in the fourth audit, "luthier
   // plans" added in the seventh (same recurring Etsy series, just phrased
   // "Luthier Plans...Blueprint" instead of "Blueprints for luthier") -- a
@@ -138,8 +147,15 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // exclusions), just for generic D&D/wargaming terrain rather than this
   // specific game. Checked against Sanctuary's own 5 currently-correct
   // results first -- none use this vocabulary, they're all plain
-  // Insert/Organizer/Dice Tray listings.
-  Sanctuary: /cthulhu|sisters of battle|sky children of (the )?light|rocamadour|wargaming terrain|tabletop terrain|\bdnd\b|d&d|rpg scenery|scatter terrain/i,
+  // Insert/Organizer/Dice Tray listings. Broadened to bare "terrain" and a
+  // "<N>mm scale" marker in the eighteenth audit -- the compound phrases
+  // above missed plain "Terrain Tiles (18mm scale)" listings; both are
+  // wargaming-miniature signals a real Sanctuary insert/organizer never
+  // uses. Re-verified against the same 5 correct results and the full
+  // visible corpus -- bare "terrain" only otherwise matches a different
+  // game's own real listing, unaffected since this exclusion is scoped to
+  // Sanctuary only.
+  Sanctuary: /cthulhu|sisters of battle|sky children of (the )?light|rocamadour|\bterrain\b|\bdnd\b|d&d|rpg scenery|\d+\s*mm scale/i,
   // Entropy has zero currently-correct results ever, same as "Sand" --
   // it's a real thermodynamics term, so the noise splits between literal
   // physics/chemistry content ("T-s diagram", "enthalpy") and several
@@ -243,7 +259,15 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // "cinderella castle" added in the fourteenth audit -- Disney's actual
   // Magic Kingdom castle name, same shape as the other Disney terms here
   // but doesn't contain the literal word "disney".
-  "The White Castle": /disney|unicorn|evil queen|coquette|cinderella castle/i,
+  // "3d model of the japanese castle" added in the eighteenth audit -- a
+  // generic tourist/decorative Himeji Castle model, hidden by the user
+  // despite the game's own real Himeji-Castle connection this exclusion
+  // list otherwise deliberately avoids touching. Checked all 14 currently-
+  // visible results first: none use "Himeji"/"White Heron" at all -- every
+  // real listing just says "The White Castle" directly (Insert/Organizer/
+  // Bridge/Token) -- so this narrow decorative-model phrase is safe and
+  // doesn't touch the bare Himeji/White Heron vocabulary itself.
+  "The White Castle": /disney|unicorn|evil queen|coquette|cinderella castle|3d model of the japanese castle/i,
   // Added in the fourteenth audit -- "Res Arcana" collides with tarot's own
   // "Major Arcana" terminology, so Etsy surfaces genuine tarot decks on
   // name alone.

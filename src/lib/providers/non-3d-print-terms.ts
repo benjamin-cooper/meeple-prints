@@ -138,6 +138,10 @@ export const NON_3D_PRINT_TERM_GROUPS: ExclusionGroup[] = [
     terms: [
       "\\bspells?\\b", "\\brituals?\\b", "\\bkarmic\\b", "regression", "past life",
       "divination", "channeling", "psychic reading", "subliminal", "\\bastral\\b",
+      // "attunement"/"manifestation" added in the seventeenth audit --
+      // same new-age genre, hit on "Covenant" (manifestation/attunement
+      // content uses "covenant" as its own spiritual-contract language).
+      "attunement", "manifestation",
     ],
   },
   {

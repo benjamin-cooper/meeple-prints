@@ -59,8 +59,19 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // already attracts).
   Recall: /\bhonda\b|\bacura\b|total recall|schwarzenegger|johnny cab|\bquaid\b|heroquest|ultima online|\bnerf\b|for seniors|reminiscing|memory care|dog (recall|training)|active recall/i,
   Lacrimosa: /neverness to everness|\bnte\b|ys viii|\bmozart\b|\brequiem\b|piano (sheet music|lesson)/i,
-  "Tag Team": /pokemon go|heroquest|\bwwf\b|funko pop/i,
-  "The Anarchy": /sons of anarchy|marvel|spiderpunk/i,
+  // "wwe"/"wrestl"/"usos"/"wrestlemania"/"tag team title" added in the
+  // seventeenth audit -- "wwf" already covered the old name, but real WWE
+  // tag-team wrestling content (belts, wrestler figures) uses the current
+  // brand name and generic wrestling vocabulary instead.
+  "Tag Team": /pokemon go|heroquest|\bwwf\b|funko pop|\bwwe\b|wrestl|\busos\b|wrestlemania|tag team title/i,
+  // "grinder"/"knucks"/"fgc9"/"anarchy symbol"/"cyber twins"/"no masters no
+  // slaves" added in the seventeenth audit -- anarchism as a real
+  // political/punk concept and symbol surfaces an unusually wide spread of
+  // unrelated things: airsoft/firearm lower receivers (FGC9), herb
+  // grinders, brass knuckles, the anarchy symbol itself. Checked against
+  // all 7 currently-visible results first -- all plain Insert/Organizer/
+  // Tray listings, none use this vocabulary.
+  "The Anarchy": /sons of anarchy|marvel|spiderpunk|\bgrinder\b|\bknucks\b|fgc9|anarchy symbol|cyber twins|no masters no slaves/i,
   // "chainsaw man" added in the fifth audit -- an anime franchise.
   // "falling entropy" added in the sixth audit -- a maker/designer's actual
   // username on these sites, which naturally collides with both "Falling"
@@ -164,7 +175,10 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // "diorama"/"miniature terrain" added in the sixteenth audit -- more
   // generic-terrain STL listings that don't happen to say "DnD"/
   // "wargaming" but are the same real-3D-print-wrong-hobby shape.
-  Ruins: /\bulvheim\b|\bcitadel\b|wargaming terrain|tabletop terrain|\bdnd\b|d&d|rpg scenery|scatter terrain|\bdiorama\b|miniature terrain/i,
+  // "aquarium"/"terrarium"/"reptile" added in the seventeenth audit -- a
+  // real 3D-print hobby genre (tank decor) that also uses "ruins" as
+  // literal decoration description.
+  Ruins: /\bulvheim\b|\bcitadel\b|wargaming terrain|tabletop terrain|\bdnd\b|d&d|rpg scenery|scatter terrain|\bdiorama\b|miniature terrain|aquarium|terrarium|reptile/i,
   // Added in the ninth audit -- "Ants" has zero currently-correct results
   // ever, same shape as Sand/Entropy/Ruins: it's a real insect, so Etsy/
   // Printables/Thingiverse/Cults3D surface actual ant-keeping/pest-control

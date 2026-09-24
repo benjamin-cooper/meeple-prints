@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { StatusQuickSelect } from "@/components/status-quick-select";
 import { typeLabel } from "@/lib/constants";
-import { cn } from "@/lib/utils";
 import type { Product } from "@/lib/types";
 
 export function ProductRow({

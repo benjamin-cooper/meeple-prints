@@ -51,13 +51,22 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // "tcg binder"/"tcg display" added in the seventh audit -- a Magic: The
   // Gathering card named "Inferno" showing up in trading-card-storage
   // listings, flat card-binder products rather than 3D-print files.
-  Inferno: /cs:?go|\bcs2\b|\bdante\b|botticelli|fortnite|arcadia quest|ghost rider|\bkyosho\b|\bvfc\b|\baeg\b|\bhpa\b|wolverine inferno|tcg binder|tcg display/i,
+  // "warhound"/"conversion bits?"/"beast wars"/pokemon added in the
+  // nineteenth audit -- Warhammer 40k's Warhound Titan, wargaming
+  // hobby-conversion bits, Transformers Beast Wars, and Pokemon TCG
+  // content all separately use "Inferno" as a unit/card/character name.
+  // Verified against Inferno's own 2 currently-correct results and the
+  // full visible corpus -- zero false positives.
+  Inferno: /cs:?go|\bcs2\b|\bdante\b|botticelli|fortnite|arcadia quest|ghost rider|\bkyosho\b|\bvfc\b|\baeg\b|\bhpa\b|wolverine inferno|tcg binder|tcg display|\bwarhound\b|conversion bits?|beast wars|pok[ée]mon/i,
   // "dog recall/training"/"active recall" added in the fifth audit -- dog
   // obedience-training content ("recall" is the actual training term for
   // a dog returning when called) and "active recall" (a real study
   // technique, ironic collision with the study-guide content this game
   // already attracts).
-  Recall: /\bhonda\b|\bacura\b|total recall|schwarzenegger|johnny cab|\bquaid\b|heroquest|ultima online|\bnerf\b|for seniors|reminiscing|memory care|dog (recall|training)|active recall/i,
+  // "wand of recall"/"mopar"/"kelsey hayes" added in the nineteenth audit --
+  // a D&D spell item and a classic Mopar-car wheel-recall listing, same
+  // scattered-real-world-"recall" shape as the rest of this entry.
+  Recall: /\bhonda\b|\bacura\b|total recall|schwarzenegger|johnny cab|\bquaid\b|heroquest|ultima online|\bnerf\b|for seniors|reminiscing|memory care|dog (recall|training)|active recall|wand of recall|\bmopar\b|kelsey hayes/i,
   Lacrimosa: /neverness to everness|\bnte\b|ys viii|\bmozart\b|\brequiem\b|piano (sheet music|lesson)/i,
   // "wwe"/"wrestl"/"usos"/"wrestlemania"/"tag team title" added in the
   // seventeenth audit -- "wwf" already covered the old name, but real WWE
@@ -86,7 +95,11 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // audit -- the same 1920s-speakeasy party/decor genre as "murder
   // mystery" above, just a different corner of it (calendars, party decor,
   // rather than mystery-party kits).
-  Speakeasy: /murder mystery|speakeasy arms|prohibition|roaring 20s|art deco|gatsby/i,
+  // "peephole grille"/"call of duty"/"clan tinleg" added in the nineteenth
+  // audit -- a real speakeasy-door hardware part, a Call of Duty weapon-
+  // skin prop, and an unrelated fantasy dwarf model, all naming
+  // "speakeasy" without being this game.
+  Speakeasy: /murder mystery|speakeasy arms|prohibition|roaring 20s|art deco|gatsby|peephole grille|call of duty|clan tinleg/i,
   // "charred earth"/"earth day"/"happiest place on earth" added in the
   // fifth audit -- a wargaming terrain term, the environmental holiday,
   // and the Disney tagline, respectively. Broadened to bare "disney(land)"
@@ -98,7 +111,9 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // audit -- more of the same craft-supply/beach-toy genre as the rest of
   // this list (Sand has zero real results ever). Verified against the full
   // visible corpus -- zero false positives.
-  Sand: /sand dune|sand castle|\bsandbox\b|kinetic sand|sand mold|sand play|sand scoop|sand dollar|sand ladder|sand jacuzzi|sand filter|sand clock|spirograph|sand tools?|pattern rollers?/i,
+  // "kief" added in the nineteenth audit -- a weed-storage container shaped
+  // like a sandbox. This game has zero currently-correct results ever.
+  Sand: /sand dune|sand castle|\bsandbox\b|kinetic sand|sand mold|sand play|sand scoop|sand dollar|sand ladder|sand jacuzzi|sand filter|sand clock|spirograph|sand tools?|pattern rollers?|\bkief\b/i,
   // "blueprints? for luthier"/"mayones" added in the fourth audit, "luthier
   // plans" added in the seventh (same recurring Etsy series, just phrased
   // "Luthier Plans...Blueprint" instead of "Blueprints for luthier") -- a
@@ -106,11 +121,24 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // plans, not 3D-print files), distinct from the "guitar" theming
   // deliberately left unexcluded above since the board game itself is
   // about being a luthier.
-  Luthier: /radius block|\bclamps?\b|\bcello\b|headstock|\bc3po\b|nut files?|string spacer|blueprints? for luthier|luthier plans|\bmayones\b/i,
-  "Galileo Galilei": /\bstatue\b|\bbust\b|portachiavi|\bkeychain\b|eppur si muove|\bstencil\b|pendulum clock|\bquadrants?\b|planetario|planetarium/i,
+  // "tool holders?"/"files? holders?"/"neck rest"/"setup tools?"/
+  // "potenciometros?" added in the nineteenth audit -- real guitar-repair
+  // tool-storage listings for actual luthiers, a genuine craft-tool genre
+  // distinct from the game's own "being a luthier" theming this entry
+  // otherwise deliberately leaves alone.
+  Luthier: /radius block|\bclamps?\b|\bcello\b|headstock|\bc3po\b|nut files?|string spacer|blueprints? for luthier|luthier plans|\bmayones\b|tool holders?|files? holders?|neck rest|setup tools?|potenciometros?/i,
+  // "tiny legends"/"chibi"/"conversation companion" added in the nineteenth
+  // audit -- a chibi-figurine product line and an unrelated ed-tech app
+  // both use the real historical figure's name. Verified against this
+  // game's own 9 currently-correct results and the full visible corpus.
+  "Galileo Galilei": /\bstatue\b|\bbust\b|portachiavi|\bkeychain\b|eppur si muove|\bstencil\b|pendulum clock|\bquadrants?\b|planetario|planetarium|tiny legends|\bchibi\b|conversation companion/i,
   Forestry: /relascope|angle gauge|densiometer|\bforwarder\b|\btyres?\b|\bdozer\b|\bgrapple\b|half-track|logging (equipment|truck)/i,
   "Black Forest": /schwarzwald|bollenhut|\bmug\b|\bbookmark\b|watermelon|battbox|vapor.*box/i,
-  Funfair: /z-scale|\bnerf\b|teacup ride|\bcarousel\b|\bkermis\b|tornado carnival|toilet container|beer tent|ride seat/i,
+  // "funfair ride"/"fairground ride"/"chariot seat" added in the nineteenth
+  // audit -- more carnival-ride 3D-print models, same genre as the teacup-
+  // ride/carousel terms already here. Verified against Funfair's own 2
+  // currently-correct results and the full visible corpus.
+  Funfair: /z-scale|\bnerf\b|teacup ride|\bcarousel\b|\bkermis\b|tornado carnival|toilet container|beer tent|ride seat|funfair ride|fairground ride|chariot seat/i,
   // "nerf"/"airsoft"/"league of legends"/"leona"/"kamen rider"/"mu online"/
   // "voron"/"nike undercover" added in the fifth audit -- Daybreak collides
   // with an unusually wide spread of unrelated brands/franchises, each
@@ -121,7 +149,11 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // "raccoon gang"/"dachshund gang" added in the fourteenth -- "gang" is
   // a common cutesy suffix for people/pet-group merchandise, same shape
   // as "villain gang" above.
-  "The Gang": /\ba-team\b|\bscooby\b|doctor who|paternoster|little rascals|\bfreshies\b|villain gang|girl gang|raccoon gang|dachshund gang/i,
+  // Bare "terrain" added in the nineteenth audit -- a wargaming-terrain
+  // listing ("Press Gang Stockade Terrain"), same generic-hobby shape as
+  // the terrain terms elsewhere in this file. Verified against this
+  // game's own 10 currently-correct results first -- none use this word.
+  "The Gang": /\ba-team\b|\bscooby\b|doctor who|paternoster|little rascals|\bfreshies\b|villain gang|girl gang|raccoon gang|dachshund gang|\bterrain\b/i,
   // "tyres?/tires?" added in the fifth audit -- Yokohama is a real tire
   // brand, which turned out to be the dominant collision (Porsche racing
   // wheels, tire logos), plus travel-guide content for the actual city.
@@ -129,13 +161,19 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // Japanese city, and makers create HueForge (multi-color layered
   // lithophane) art of its actual landmarks (Marine Tower, the Red Brick
   // Warehouse) -- three separate listings hit this exact term.
-  Yokohama: /\btyres?\b|\btires?\b|reiseführer|field guide|hueforge/i,
+  // "slot car"/"carrera"/"manhole" added in the nineteenth audit -- a
+  // Carrera slot-car advertising sign and a manhole-cover coaster, both
+  // real-world Yokohama-the-city collisions rather than this game.
+  Yokohama: /\btyres?\b|\btires?\b|reiseführer|field guide|hueforge|slot car|\bcarrera\b|\bmanhole\b/i,
   // Fromage collides with its own literal meaning -- French for "cheese" --
   // so almost everything found for it is real cheese-making equipment/
   // recipes rather than board-game accessories. Can't exclude on "fromage"
   // itself (that's the search term), so this keys on the specific
   // cheese-tool/recipe vocabulary instead.
-  Fromage: /tupperware|\bmoulin\b|\brape\b|\bpresse\b|gâteau|glaçage|\bchevre\b/i,
+  // "rape" broadened to "r[aâ]pe" in the nineteenth audit -- a French
+  // cheese-grater listing spelled it with the accented "râpe", which the
+  // plain-"a" version silently never matched.
+  Fromage: /tupperware|\bmoulin\b|\br[aâ]pe\b|\bpresse\b|gâteau|glaçage|\bchevre\b/i,
   // "cthulhu"/"sisters of battle"/"sky children of (the) light"/
   // "rocamadour" added in the fifth audit -- Sanctuary's noise is mostly
   // generic fantasy/sci-fi terrain with no single unifying vocabulary
@@ -155,8 +193,13 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // game's own real listing, unaffected since this exclusion is scoped to
   // Sanctuary only. (The "<N>mm scale" half of that same collision was
   // promoted to the general WARGAMING_SCALE_PATTERN below instead, since
-  // it isn't specific to Sanctuary.)
-  Sanctuary: /cthulhu|sisters of battle|sky children of (the )?light|rocamadour|\bterrain\b|\bdnd\b|d&d|rpg scenery/i,
+  // it isn't specific to Sanctuary.) Bare "ruins?" added in the nineteenth
+  // audit -- another generic-wargaming-terrain word Sanctuary's noise
+  // shares, same shape as "terrain" above. NOTE: this word alone has 23
+  // real matches DB-wide, all for the unrelated game "Lost Ruins of
+  // Arnak" -- harmless here since this exclusion only ever runs against
+  // Sanctuary's own search results, never Arnak's.
+  Sanctuary: /cthulhu|sisters of battle|sky children of (the )?light|rocamadour|\bterrain\b|\bruins?\b|\bdnd\b|d&d|rpg scenery/i,
   // Entropy has zero currently-correct results ever, same as "Sand" --
   // it's a real thermodynamics term, so the noise splits between literal
   // physics/chemistry content ("T-s diagram", "enthalpy") and several
@@ -194,8 +237,14 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // "wargaming" but are the same real-3D-print-wrong-hobby shape.
   // "aquarium"/"terrarium"/"reptile" added in the seventeenth audit -- a
   // real 3D-print hobby genre (tank decor) that also uses "ruins" as
-  // literal decoration description.
-  Ruins: /\bulvheim\b|\bcitadel\b|wargaming terrain|tabletop terrain|\bdnd\b|d&d|rpg scenery|scatter terrain|\bdiorama\b|miniature terrain|aquarium|terrarium|reptile/i,
+  // literal decoration description. Broadened to bare "terrain"/
+  // "wargam(e|ing)"/"mordheim" (a specific Games Workshop wargame) and to
+  // "planter"/"bookmark" (real craft items, a different genre) in the
+  // eighteenth audit -- same "real 3D-print, generic wargaming/craft
+  // subject, zero board-game relevance" shape as everything else here.
+  // This game still has zero currently-correct results ever (60 rows
+  // found, 0 visible), so every one of these is maximally safe.
+  Ruins: /\bulvheim\b|\bcitadel\b|\bterrain\b|\bdnd\b|d&d|rpg scenery|\bdiorama\b|aquarium|terrarium|reptile|wargam(e|ing)|\bmordheim\b|\bplanters?\b|\bbookmarks?\b/i,
   // Added in the ninth audit -- "Ants" has zero currently-correct results
   // ever, same shape as Sand/Entropy/Ruins: it's a real insect, so Etsy/
   // Printables/Thingiverse/Cults3D surface actual ant-keeping/pest-control
@@ -216,7 +265,11 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // "Tea Garden" collides with the ladies'/bridal tea-party planning genre
   // -- every real hit for this game says "Insert"/"Organizer"/"Puerh", never
   // "tea party".
-  "Tea Garden": /tea party/i,
+  // "tea lights?"/"lego"/"zen garden" added in the nineteenth audit -- a
+  // candle listing, a LEGO set replacement part, and an unrelated zen-
+  // garden kit, all sharing "tea"/"garden" separately rather than being
+  // this game.
+  "Tea Garden": /tea party|tea lights?|\blego\b|zen garden/i,
   // Iliad collides with Greek-mythology classroom/gift content (Homer's
   // actual subject matter, so relevance.ts can't tell them apart on name
   // alone) -- Achilles/Agamemnon namecards, escape-room activities, word-
@@ -225,7 +278,13 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // a currently-correct result ("Cable cover box for Iliad Box") uses the
   // same "Iliad Box" phrase, so only the unambiguous router-only terms
   // would be safe, and none of those appeared often enough here to bother.
-  Iliad: /greek mythology|escape room|word clouds?|digital stamps?|trojan war|\bagamemnon\b|\bachilles\b/i,
+  // "freebox"/"nas"/"wifi 6"/"zimablade" added in the nineteenth audit --
+  // "Iliad" (Free/Iliad) is also a real French ISP whose router hardware
+  // ("Freebox"/"Iliadbox") and NAS-enclosure mod projects collide here.
+  // Deliberately left bare "iliad box" alone: a currently-visible real
+  // result ("Cable cover box for Iliad Box") uses that exact phrase too,
+  // so it can't be safely distinguished from the router by title alone.
+  Iliad: /greek mythology|escape room|word clouds?|digital stamps?|trojan war|\bagamemnon\b|\bachilles\b|freebox|\bnas\b|wifi\s*6|zimablade/i,
   // "Flip 7" collides with THREE unrelated real products that all happen to
   // share the name: the Samsung Galaxy Z Flip 7 (foldable phone cases/
   // skins/stands), the JBL Flip 7 (bluetooth speaker holders), and GoPro's
@@ -273,6 +332,21 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // "Major Arcana" terminology, so Etsy surfaces genuine tarot decks on
   // name alone.
   "Res Arcana": /tarot|major arcana/i,
+  // Added in the nineteenth audit -- literal Mars-planet astronomy/sci-fi
+  // terrain models (crater/canyon/city names) that collide with the game's
+  // own name. Verified against this game's own 10 currently-correct
+  // results first -- none use these specific named features.
+  "On Mars": /gusev crater|olympus mons|gossamer canyon|sulfur city/i,
+  // Added in the nineteenth audit -- "SecSavr Skyrise" is a real resin 3D
+  // printer model, and "Christophsis" is a Star Wars planet name; neither
+  // is this game. Verified against this game's own 4 currently-correct
+  // results first.
+  Skyrise: /secsavr|christophsis/i,
+  // Added in the nineteenth audit -- "corral"/"commissary" are real
+  // ranch/livestock-supply terms that a separate "Tend" product line uses,
+  // distinct from this game's own accessories. Verified against this
+  // game's own 2 currently-correct results first.
+  Tend: /\bcorral\b|commissary/i,
 };
 
 /**

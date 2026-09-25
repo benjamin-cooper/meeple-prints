@@ -55,6 +55,12 @@ export const NON_3D_PRINT_TERM_GROUPS: ExclusionGroup[] = [
       // differently. Verified against every currently-visible row -- only
       // the two genuine cut-file listings it was added for.
       "cut files?",
+      // "laser engraving" added in the nineteenth audit -- a distinct
+      // technique from "laser\s*cut" above (engraving a 2D design into a
+      // surface rather than cutting through it), same not-a-3D-print shape.
+      // Verified against every currently-visible row -- zero false
+      // positives.
+      "laser engraving",
     ],
   },
   {
@@ -62,7 +68,12 @@ export const NON_3D_PRINT_TERM_GROUPS: ExclusionGroup[] = [
     terms: [
       "posters?", "wall\\s*art", "art\\s*prints?", "clip\\s*art",
       "coloring\\s*pages?", "coloring\\s*books?", "printable photos?",
-      "digital backdrops?", "frame tv art", "classroom decor", "seamless patterns?",
+      "frame tv art", "classroom decor", "seamless patterns?",
+      // Broadened from "digital backdrops?" to bare "backdrops?" in the
+      // nineteenth audit -- plenty of sellers say just "Backdrops" with no
+      // "digital" in front (photography/composite backdrops), same flat-
+      // image genre. Verified against every currently-visible row.
+      "backdrops?",
     ],
   },
   {
@@ -129,7 +140,18 @@ export const NON_3D_PRINT_TERM_GROUPS: ExclusionGroup[] = [
       "\\bpng\\b",
     ],
   },
-  { category: "device wallpapers", terms: ["(phone|tablet|ipad|watch|desktop)\\s*(wallpaper|background)s?"] },
+  {
+    // "virtual/zoom/meeting background" and "screensavers?" added in the
+    // nineteenth audit -- same screen-displayed-digital-image genre as the
+    // device wallpapers already here, just for video calls rather than a
+    // lock screen. Verified against every currently-visible row.
+    category: "device wallpapers / video-call backgrounds",
+    terms: [
+      "(phone|tablet|ipad|watch|desktop)\\s*(wallpaper|background)s?",
+      "virtual backgrounds?", "zoom backgrounds?", "meeting backgrounds?",
+      "screensavers?",
+    ],
+  },
   { category: "recipes", terms: ["recipes?"] },
   { category: "font files", terms: ["fonts?"] },
   { category: "audio downloads", terms: ["\\bmp3\\b"] },
@@ -142,6 +164,10 @@ export const NON_3D_PRINT_TERM_GROUPS: ExclusionGroup[] = [
       // same new-age genre, hit on "Covenant" (manifestation/attunement
       // content uses "covenant" as its own spiritual-contract language).
       "attunement", "manifestation",
+      // "spirit companions?"/"direct binding" added in the nineteenth audit
+      // -- same new-age/occult genre, recurring Etsy "spirit companion"
+      // listing template hit on "Covenant" and others.
+      "spirit companions?", "direct binding",
     ],
   },
   {
@@ -211,6 +237,26 @@ export const NON_3D_PRINT_TERM_GROUPS: ExclusionGroup[] = [
       // listings.
       "\\bpdf\\b",
     ],
+  },
+  {
+    // Added in the nineteenth audit -- ChatGPT/AI prompt packs are a
+    // growing Etsy digital-download genre (a text file of prompts, not a
+    // 3D-print file) that happened to hit games sharing vocabulary with
+    // the prompts' own subject matter. Verified against every currently-
+    // visible row -- zero false positives.
+    category: "AI-prompt / ChatGPT content",
+    terms: ["chatgpt prompts?", "ai prompts?"],
+  },
+  {
+    // Added in the nineteenth audit -- a recurring Etsy genre of interior-
+    // design paint-color-scheme products (Sherwin Williams palettes, etc.)
+    // that collide on a game's name used as the palette's own theme name.
+    // Verified against every currently-visible row -- zero false
+    // positives, including against real STL listings that mention "paint"
+    // in passing (this only matches the compound "paint palette/colors"
+    // phrasing, not bare "paint").
+    category: "interior-design paint-color content",
+    terms: ["paint (palette|colors?)"],
   },
 ];
 

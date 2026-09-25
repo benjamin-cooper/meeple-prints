@@ -11,7 +11,7 @@ import { searchAllProviders } from "@/lib/providers";
 import { getProviderCredentials } from "@/lib/providers/env-credentials";
 import { guessTypeFromTitle } from "@/lib/providers/guess-type";
 import { findDuplicateIndices } from "@/lib/providers/dedupe";
-import { KNOWN_COLLISION_EXCLUSIONS, WARGAMING_SCALE_PATTERN } from "@/lib/providers/known-collisions";
+import { KNOWN_COLLISION_EXCLUSIONS, WARGAMING_SCALE_PATTERN, DOLLHOUSE_MINIATURE_PATTERN } from "@/lib/providers/known-collisions";
 import { MISC_GAME_BGG_ID } from "@/lib/constants";
 
 /**
@@ -130,7 +130,9 @@ export async function scanGame(
     {
       term: game.name,
       extraFilter: (title: string) =>
-        (!collisionExclusion || !collisionExclusion.test(title)) && !WARGAMING_SCALE_PATTERN.test(title),
+        (!collisionExclusion || !collisionExclusion.test(title)) &&
+        !WARGAMING_SCALE_PATTERN.test(title) &&
+        !DOLLHOUSE_MINIATURE_PATTERN.test(title),
     },
   ];
   const creds = getProviderCredentials();

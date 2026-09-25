@@ -366,3 +366,16 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
  * of) any per-game KNOWN_COLLISION_EXCLUSIONS entry above.
  */
 export const WARGAMING_SCALE_PATTERN = /\d+\s*mm\s*scale/i;
+
+/**
+ * Same shape as WARGAMING_SCALE_PATTERN above -- these ARE real 3D-print
+ * STL files, just for a different physical-scale hobby than tabletop board
+ * games: 1:12-ish dollhouse miniatures and "book nook" diorama inserts
+ * (a bookshelf-insert scene, a distinct and prolific STL genre of its own).
+ * Added in the nineteenth audit after a sweep of ~600 previously-unlabeled
+ * hidden rows found this recurring across a dozen unrelated games
+ * (Sanctuary, Inferno, ...) with no connection to any one game's own
+ * vocabulary. Verified zero matches across all 1423 currently-visible
+ * results, every game, every domain.
+ */
+export const DOLLHOUSE_MINIATURE_PATTERN = /book nooks?|dollhouse/i;

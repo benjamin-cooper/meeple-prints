@@ -379,3 +379,31 @@ export const WARGAMING_SCALE_PATTERN = /\d+\s*mm\s*scale/i;
  * results, every game, every domain.
  */
 export const DOLLHOUSE_MINIATURE_PATTERN = /book nooks?|dollhouse/i;
+
+/**
+ * Twentieth audit: for games whose name is an ordinary English word, almost
+ * every Etsy result is non-3D-print content (planners, art, spreadsheets,
+ * spiritual downloads) and chasing it term by term never ends -- new
+ * vocabulary shows up faster than rules can be added. For these games Etsy
+ * results must instead *positively* look like a 3D-print/board-game
+ * accessory listing. A positive requirement was rejected for all games
+ * (it cuts real results from games whose listings just say the game name
+ * and the part), but these games qualify because their Etsy results are
+ * overwhelmingly hidden: each had >=8 hidden Etsy rows and >=75% of its
+ * Etsy results hidden at the time of the audit, and every currently-visible
+ * Etsy row in them already matches the signal below (nothing visible would
+ * have been lost). Measured: 493 of 598 hidden Etsy rows in these 17 games
+ * lack the signal. Add a game here only after that same check; other
+ * games are untouched.
+ */
+export const ETSY_SIGNAL_REQUIRED_GAMES = new Set([
+  "Recall", "Sanctuary", "Falling", "Inferno", "Covenant", "Ruins", "Earth", "Sand", "The Gang",
+  "Speakeasy", "Tag Team", "Luthier", "Ants", "Forestry", "Daybreak", "The Anarchy", "Funfair",
+]);
+
+export const ETSY_PRINT_SIGNAL =
+  /\bstl\b|\b3mf\b|\b3d\b|3-d|\bobj\b|print[- ]?in[- ]?place|\bgcode\b|insert|organi[sz]er|\btray\b|\btoken|\bholder\b|\bbox\b|\bstorage\b|\bcaddy\b|\bgridfinity\b|\bminiature|\bmini(s)?\b|\bfigure|\bstatue|\bbust\b|\bterrain\b|\bdice\b|\bmeeple|\bcoin|\bmodel\b|\bupgrade|\binlay|\boverlay|\bboard game\b/i;
+
+export function failsEtsyPrintSignal(gameName: string, domain: string, title: string): boolean {
+  return domain === "etsy.com" && ETSY_SIGNAL_REQUIRED_GAMES.has(gameName) && !ETSY_PRINT_SIGNAL.test(title);
+}

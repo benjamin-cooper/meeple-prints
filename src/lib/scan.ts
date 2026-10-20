@@ -11,7 +11,12 @@ import { searchAllProviders } from "@/lib/providers";
 import { getProviderCredentials } from "@/lib/providers/env-credentials";
 import { guessTypeFromTitle } from "@/lib/providers/guess-type";
 import { findDuplicateIndices } from "@/lib/providers/dedupe";
-import { KNOWN_COLLISION_EXCLUSIONS, WARGAMING_SCALE_PATTERN, DOLLHOUSE_MINIATURE_PATTERN } from "@/lib/providers/known-collisions";
+import {
+  KNOWN_COLLISION_EXCLUSIONS,
+  WARGAMING_SCALE_PATTERN,
+  DOLLHOUSE_MINIATURE_PATTERN,
+  failsEtsyPrintSignal,
+} from "@/lib/providers/known-collisions";
 import { MISC_GAME_BGG_ID } from "@/lib/constants";
 
 /**
@@ -153,7 +158,9 @@ export async function scanGame(
     const results = perQuery
       .flatMap((outcomesForQuery, qi) => {
         const filter = queries[qi].extraFilter;
-        return outcomesForQuery[providerIndex].results.filter((r) => !filter || filter(r.title));
+        return outcomesForQuery[providerIndex].results.filter(
+          (r) => (!filter || filter(r.title)) && !failsEtsyPrintSignal(game.name, base.domain, r.title)
+        );
       })
       .filter((r) => {
         if (seen.has(r.url)) return false;

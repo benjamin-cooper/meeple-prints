@@ -1,4 +1,9 @@
-import { KNOWN_COLLISION_EXCLUSIONS, WARGAMING_SCALE_PATTERN, DOLLHOUSE_MINIATURE_PATTERN } from "./known-collisions";
+import {
+  KNOWN_COLLISION_EXCLUSIONS,
+  WARGAMING_SCALE_PATTERN,
+  DOLLHOUSE_MINIATURE_PATTERN,
+  failsEtsyPrintSignal,
+} from "./known-collisions";
 import { NON_3D_PRINT_PATTERN } from "./non-3d-print-terms";
 import { findDuplicateIndices, type Dedupable } from "./dedupe";
 
@@ -34,6 +39,8 @@ export function explainHiddenRows(allRowsAcrossGames: RowForExplanation[]): Map<
       continue;
     }
     if (r.domain === "etsy.com" && NON_3D_PRINT_PATTERN.test(r.title)) {
+      explained.set(r.id, "not-3d-print");
+    } else if (failsEtsyPrintSignal(r.gameName, r.domain, r.title)) {
       explained.set(r.id, "not-3d-print");
     }
   }

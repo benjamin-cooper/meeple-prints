@@ -106,7 +106,10 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // in the eighth audit after a second, differently-worded Disney tagline
   // ("Most Magical Place on Earth") showed up -- chasing each individual
   // tagline wasn't going to keep up with Disney's own marketing copy.
-  Earth: /\bpuzzle\b|topograph|\bcoaster\b|\bglobe\b|\batlas\b|\belemental\b|\bepcot\b|spaceship earth|charred earth|earth day|happiest place on earth|disney(land)?/i,
+  // "middle-earth"/"mesbg" added in the twentieth audit -- Games Workshop's
+  // Middle-earth Strategy Battle Game miniatures accessories (hand-confirmed
+  // not this game). The only visible Earth row it matches is that listing.
+  Earth: /\bpuzzle\b|topograph|\bcoaster\b|\bglobe\b|\batlas\b|\belemental\b|\bepcot\b|spaceship earth|charred earth|earth day|happiest place on earth|disney(land)?|middle.?earth|\bmesbg\b/i,
   // "spirograph"/"sand tools?"/"pattern rollers?" added in the eighteenth
   // audit -- more of the same craft-supply/beach-toy genre as the rest of
   // this list (Sand has zero real results ever). Verified against the full

@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 const itemKey = (item: CatalogItem) => `${item.kind}-${item.id}`;
 
 type ViewMode = "marketplace" | "spreadsheet";
-type SortMode = "newest" | "game" | "price-low" | "price-high";
+type SortMode = "newest" | "game" | "popular" | "price-low" | "price-high";
 type GameWithScan = Game & { lastScannedAt: string | null };
 
 const PAGE_SIZE = 60;
@@ -48,6 +48,37 @@ interface FilterState {
 type FilterKey = keyof FilterState;
 
 /**
+ * Rough cross-site popularity: Thingiverse/Cults3D report likes, Printables
+ * reports a rating plus a review count, Etsy reports neither (sorts last).
+ * The scales differ per site, so this orders within a site well and across
+ * sites only approximately -- good enough to surface what others found
+ * worth liking instead of an alphabetical wall.
+ */
+function popularity(item: CatalogItem): number {
+  const likes = item.kind === "saved" ? item.siteLikesCount : item.likesCount;
+  if (likes != null) return likes;
+  const count = item.kind === "saved" ? item.siteRatingCount : item.ratingCount;
+  const avg = item.kind === "saved" ? item.siteRating : item.rating;
+  if (count != null && avg != null) return count * (avg / 5);
+  return -1;
+}
+
+// The search haystack never changes for a given item, but the matcher runs
+// once per facet plus once for the list on every keystroke or filter change
+// -- re-parsing every item's tags JSON each time. Build it once per item.
+const haystackCache = new WeakMap<CatalogItem, string>();
+function searchHaystack(item: CatalogItem): string {
+  let hay = haystackCache.get(item);
+  if (hay === undefined) {
+    const notes = item.kind === "saved" ? item.notes ?? "" : "";
+    const tags: string[] = item.kind === "saved" && item.tags ? JSON.parse(item.tags) : [];
+    hay = [item.title, item.creator ?? "", notes, ...tags, ...itemGames(item).map((g) => g.name)].join(" ").toLowerCase();
+    haystackCache.set(item, hay);
+  }
+  return hay;
+}
+
+/**
  * One predicate shared by the results list and every facet's "what's
  * actually available" computation. Passing `exclude` skips that filter's
  * own condition, so a dropdown's option list reflects every OTHER active
@@ -62,11 +93,7 @@ function matchesFilters(item: CatalogItem, f: FilterState, exclude?: FilterKey):
   if (exclude !== "freeOnly" && f.freeOnly && !item.isFree) return false;
   if (exclude !== "savedOnly" && f.savedOnly && item.kind !== "saved") return false;
   if (exclude !== "query" && f.query.trim()) {
-    const q = f.query.trim().toLowerCase();
-    const notes = item.kind === "saved" ? item.notes ?? "" : "";
-    const tags: string[] = item.kind === "saved" && item.tags ? JSON.parse(item.tags) : [];
-    const hay = [item.title, item.creator ?? "", notes, ...tags, ...itemGameList.map((g) => g.name)].join(" ").toLowerCase();
-    if (!hay.includes(q)) return false;
+    if (!searchHaystack(item).includes(f.query.trim().toLowerCase())) return false;
   }
   return true;
 }
@@ -99,12 +126,27 @@ export default function CatalogPage() {
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [bulking, setBulking] = useState(false);
 
+  // A failed load used to leave the skeleton grid up forever (and a 401's
+  // JSON body would have been read as an empty catalog) -- surface it.
+  const [loadError, setLoadError] = useState<string | null>(null);
   const loadCatalog = () =>
-    fetch("/api/catalog").then((r) => r.json()).then((data) => {
-      setItems(data.items);
-      setHiddenCount(data.hiddenCount ?? 0);
-    });
-  const loadGames = () => fetch("/api/games").then((r) => r.json()).then(setGames);
+    fetch("/api/catalog")
+      .then(async (r) => {
+        if (r.status === 401) throw new Error("Your session expired -- sign in again.");
+        if (!r.ok) throw new Error("The catalog didn't load.");
+        return r.json();
+      })
+      .then((data) => {
+        setItems(data.items);
+        setHiddenCount(data.hiddenCount ?? 0);
+        setLoadError(null);
+      })
+      .catch((err) => setLoadError(err instanceof Error ? err.message : "The catalog didn't load."));
+  const loadGames = () =>
+    fetch("/api/games")
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("games"))))
+      .then(setGames)
+      .catch(() => {});
 
   useEffect(() => {
     loadCatalog();
@@ -210,7 +252,7 @@ export default function CatalogPage() {
     () => ({ all: "All statuses", ...Object.fromEntries(visibleStatuses.map((s) => [s.value, s.label])) }),
     [visibleStatuses]
   );
-  const sortItems = { newest: "Newest", game: "Game A-Z", "price-low": "Price: Low", "price-high": "Price: High" };
+  const sortItems = { newest: "Newest", game: "Game A-Z", popular: "Most popular", "price-low": "Price: Low", "price-high": "Price: High" };
 
   // For a saved item linked to more than one game, the alphabetically-first
   // name is the deterministic choice -- there's no single "primary" game to
@@ -230,6 +272,7 @@ export default function CatalogPage() {
         // option -- surfacing "sort by bare title" invites a shuffled-
         // looking grid where unrelated games interleave alphabetically.
         case "game": return primaryGameName(a).localeCompare(primaryGameName(b)) || a.title.trim().localeCompare(b.title.trim());
+        case "popular": return popularity(b) - popularity(a) || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         case "price-low": return (a.isFree ? 0 : a.price ?? Infinity) - (b.isFree ? 0 : b.price ?? Infinity);
         case "price-high": return (b.isFree ? 0 : b.price ?? -Infinity) - (a.isFree ? 0 : a.price ?? -Infinity);
         default: return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -604,6 +647,7 @@ export default function CatalogPage() {
             <SelectContent>
               <SelectItem value="newest">Newest</SelectItem>
               <SelectItem value="game">Game A-Z</SelectItem>
+              <SelectItem value="popular">Most popular</SelectItem>
               <SelectItem value="price-low">Price: Low</SelectItem>
               <SelectItem value="price-high">Price: High</SelectItem>
             </SelectContent>
@@ -637,7 +681,15 @@ export default function CatalogPage() {
         </div>
       </div>
 
-      {items === null && (
+      {items === null && loadError && (
+        <div className="text-center py-20 border border-dashed border-destructive/40 rounded-lg">
+          <p className="font-display font-bold text-xl uppercase mb-1">Couldn&apos;t load the catalog</p>
+          <p className="text-sm text-muted-foreground mb-4">{loadError}</p>
+          <Button variant="secondary" onClick={() => { setLoadError(null); loadCatalog(); }}>Try again</Button>
+        </div>
+      )}
+
+      {items === null && !loadError && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
           {Array.from({ length: 10 }).map((_, i) => <Skeleton key={i} className="aspect-[4/3.6] rounded-lg" />)}
         </div>

@@ -75,6 +75,11 @@ export const PRODUCT_STATUSES = [
  */
 export const HIDE_REASONS = [
   { value: "wrong-game", label: "Wrong game" },
+  // Split out from "wrong-game" -- most things dismissed as the wrong game
+  // turned out not to be about any board game at all (generic wargaming
+  // terrain, craft items, other hobbies sharing a word with the title), and
+  // that's a different pattern to learn from than a real look-alike game.
+  { value: "off-topic", label: "Not board-game related" },
   { value: "not-3d-print", label: "Not a 3D print" },
   { value: "duplicate", label: "Duplicate" },
   { value: "low-quality", label: "Low quality" },

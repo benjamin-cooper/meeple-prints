@@ -1,4 +1,4 @@
-import { Ban, FileX, Copy, ThumbsDown, MoreHorizontal, type LucideIcon } from "lucide-react";
+import { Ban, CircleSlash, FileX, Copy, ThumbsDown, MoreHorizontal, type LucideIcon } from "lucide-react";
 
 /**
  * One glyph per HIDE_REASONS value, encoding the reason itself rather than
@@ -8,6 +8,7 @@ import { Ban, FileX, Copy, ThumbsDown, MoreHorizontal, type LucideIcon } from "l
  */
 export const HIDE_REASON_ICONS: Record<string, LucideIcon> = {
   "wrong-game": Ban,
+  "off-topic": CircleSlash,
   "not-3d-print": FileX,
   duplicate: Copy,
   "low-quality": ThumbsDown,

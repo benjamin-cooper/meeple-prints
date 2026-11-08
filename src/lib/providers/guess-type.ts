@@ -14,9 +14,9 @@ const RULES: Array<{ type: string; pattern: RegExp }> = [
   // sample of real "other"-typed results and found e.g. "D20 Dice Holder"
   // and "Dragon Dice Holder" landing in "other" purely because they don't
   // say "tower" or "tray", despite being the same accessory.
-  { type: "dice-tower", pattern: /dice\s*(tower|tray|holder|case|vault)/i },
-  { type: "tuckbox", pattern: /tuck\s*box|card\s*box/i },
-  { type: "card-holder", pattern: /card\s*(holder|stand|tray)/i },
+  { type: "dice-tower", pattern: /dice\s*(tower|tray|holder|case|vault)s?/i },
+  { type: "tuckbox", pattern: /tuck\s*boxe?s?|card\s*boxe?s?/i },
+  { type: "card-holder", pattern: /card\s*(holder|stand|tray)s?/i },
   // "overlay" added -- player board overlays (e.g. "Terraforming Mars
   // Player Board Overlay") do the same job as a tracker/dashboard, just a
   // different physical form (a sheet that sits on the board vs. a standalone piece).
@@ -27,16 +27,25 @@ const RULES: Array<{ type: string; pattern: RegExp }> = [
   // feature within it. Confirmed live: "Grand Austria Hotel Insert /
   // Organizer - Holds Meeple Source..." self-labels as an insert, but also
   // says "meeple" -- checking tokens first would wrongly steal it.
-  { type: "insert", pattern: /\binsert\b|\binlay\b|organi[sz]er/i },
+  // Plurals matter here: "inserts"/"organizers" is just as common as the
+  // singular, and \binsert\b silently never matched it.
+  { type: "insert", pattern: /\binserts?\b|\binlays?\b|organi[sz]ers?/i },
   // Checked *before* the generic tray/storage catch-all further down --
   // "tray"/"storage"/"caddy" are generic enough to describe a token holder
   // just as often as a box insert ("7 Wonders Duel Token Tray", "On Mars:
   // Player Token Storage Caddy"). Confirmed live: putting the generic
   // catch-all first wrongly reclassified 14 real "tokens" results as
   // "insert" purely on the strength of "tray" alone.
-  { type: "tokens", pattern: /\bcoins?\b|\btokens?\b|\bmeeples?\b|\bresources?\b/i },
+  { type: "tokens", pattern: /\bcoins?\b|\btokens?\b|\bmeeples?\b|\bresources?\b|\bchips?\b|\bmarkers?\b/i },
   { type: "terrain", pattern: /\bterrain\b/i },
   { type: "miniature", pattern: /\bminiatures?\b|\bminis?\b|\bproxy\b|\bproxies\b/i },
+  // Late on purpose: a bare "player board" is a standalone dashboard, but
+  // "Insert and Player Boards" is an insert that happens to include them --
+  // anything with a stronger word above has already been caught.
+  // Plural trackers/overlays/dashboards belong here for the same reason: the
+  // singular above wins over insert on purpose, but "Insert ... + Score
+  // Trackers" is an insert.
+  { type: "tracker", pattern: /\bplayer\s*boards?\b|\bplayerboards?\b|\btrackers\b|\boverlays\b|\bdashboards\b/i },
   // Last resort before "other" -- generic tray/storage words with no
   // stronger signal (no "insert"/"organizer", no token/coin/meeple/
   // resource, no terrain, no miniature) elsewhere in the title. Deliberately
@@ -47,7 +56,7 @@ const RULES: Array<{ type: string; pattern: RegExp }> = [
   // want to filter for separately. The single biggest gap found auditing
   // "other": tile trays, card storage, board storage that don't say
   // "insert"/"organizer" and don't belong to any of the other categories.
-  { type: "tray", pattern: /\btray\b|\bcaddy\b|\bstorage\b|\benclosure\b/i },
+  { type: "tray", pattern: /\btrays?\b|\bcadd(y|ies)\b|\bstorage\b|\benclosures?\b|\bholders?\b|\bcases?\b/i },
 ];
 
 export function guessTypeFromTitle(title: string): string {

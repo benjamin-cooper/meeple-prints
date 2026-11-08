@@ -19,6 +19,7 @@ import {
 } from "@/lib/providers/known-collisions";
 import { MISC_GAME_BGG_ID } from "@/lib/constants";
 import { MISC_SEARCH_TERMS } from "@/lib/providers/misc-terms";
+import { judgeResults, shouldJudge } from "@/lib/providers/llm-judge";
 
 /**
  * searchAllProviders already dedupes cross-domain matches within one call,
@@ -181,6 +182,11 @@ export async function scanGame(
     : [];
   const savedUrls = new Set(existing.map((p) => p.url));
 
+  // Second opinion on results this game has never stored (see llm-judge.ts).
+  // Rejected ones are kept as hidden, labelled rows rather than dropped, so
+  // they can be reviewed on the Hidden page and aren't re-judged next scan.
+  const autoHidden = await judgeNewResults(game, outcomes, savedUrls);
+
   await Promise.all(
     outcomes.flatMap((o) =>
       o.results.map((r) => {
@@ -198,10 +204,14 @@ export async function scanGame(
           ratingCount: r.ratingCount,
           likesCount: r.likesCount,
         };
+        const reason = autoHidden.get(r.url);
         return prisma.discoveredPrint.upsert({
           where: { gameId_url: { gameId: game.id, url: r.url } },
           update: data,
-          create: { gameId: game.id, url: r.url, ...data },
+          create: {
+            gameId: game.id, url: r.url, ...data,
+            ...(reason ? { hidden: true, hideReason: `auto:${reason === "different-game" ? "wrong-game" : "off-topic"}` } : {}),
+          },
         });
       })
     )
@@ -211,8 +221,25 @@ export async function scanGame(
 
   return outcomes.map((o) => ({
     ...o,
-    results: o.results.map((r) => ({ ...r, alreadySaved: savedUrls.has(r.url) })),
+    results: o.results.filter((r) => !autoHidden.has(r.url)).map((r) => ({ ...r, alreadySaved: savedUrls.has(r.url) })),
   }));
+}
+
+async function judgeNewResults(
+  game: { id: number; name: string },
+  outcomes: { domain: string; results: { url: string; title: string }[] }[],
+  savedUrls: Set<string>
+) {
+  if (!shouldJudge(game.name) || !process.env.ANTHROPIC_API_KEY) return new Map<string, "different-game" | "off-topic">();
+  const all = outcomes.flatMap((o) => o.results.filter((r) => !savedUrls.has(r.url)).map((r) => ({ url: r.url, title: r.title, domain: o.domain })));
+  if (all.length === 0) return new Map<string, "different-game" | "off-topic">();
+  const known = new Set(
+    (await prisma.discoveredPrint.findMany({ where: { gameId: game.id, url: { in: all.map((c) => c.url) } }, select: { url: true } })).map((r) => r.url)
+  );
+  const fresh = all.filter((c) => !known.has(c.url));
+  const rejected = await judgeResults(game.name, fresh);
+  if (fresh.length > 0) console.log(`[judge] ${game.name}: rejected ${rejected.size} of ${fresh.length} new`);
+  return rejected;
 }
 
 async function scanOne(game: { id: number; name: string; bggId: number }): Promise<number> {
@@ -229,7 +256,7 @@ async function scanOne(game: { id: number; name: string; bggId: number }): Promi
 // budget no longer comfortably fits a worst-case game so the caller always
 // returns cleanly; games ordered by lastScannedAt asc (both callers below)
 // means anything skipped this way is simply first in line next time.
-export const DEFAULT_BATCH_TIME_BUDGET_MS = 45_000;
+export const DEFAULT_BATCH_TIME_BUDGET_MS = 40_000;
 
 // Games are scanned a few at a time rather than strictly one after another:
 // a single game spends most of its time waiting on provider network

@@ -21,6 +21,7 @@ import { NON_3D_PRINT_PATTERN } from "./non-3d-print-terms";
 import { guessTypeFromTitle } from "./guess-type";
 import { dropGuardVerdict } from "../drop-guard";
 import { isGameSpecificMiscResult, MISC_SEARCH_TERMS } from "./misc-terms";
+import { buildPrompt, judgeResults, parseVerdicts, shouldJudge } from "./llm-judge";
 
 /** Every general rule a real result for `game` has to survive. */
 function isExcluded(game: string, title: string, domain = "printables.com"): boolean {
@@ -183,4 +184,37 @@ test("Miscellaneous rejects inserts made for one specific game but keeps generic
   for (const t of generic) assert.equal(isGameSpecificMiscResult(t), false, t);
   // ...and the scan-time filters for every Miscellaneous term apply it.
   for (const q of MISC_SEARCH_TERMS) assert.equal(q.extraFilter?.(specific[0]), false, q.term);
+});
+
+test("the AI screen: scope, prompt, and parsing all lean toward keeping", async () => {
+  assert.equal(shouldJudge("Miscellaneous", undefined), true);
+  assert.equal(shouldJudge("Recall", undefined), true);
+  assert.equal(shouldJudge("Ticket to Ride", undefined), false);
+  assert.equal(shouldJudge("Ticket to Ride", "all"), true);
+  assert.equal(shouldJudge("Recall", "off"), false);
+
+  const { system, user } = buildPrompt("Recall", [{ url: "u1", title: "Dental Recall &amp; Tracker", domain: "etsy.com" }]);
+  assert.match(system, /owns the board game "Recall"/);
+  assert.match(system, /When in doubt, answer keep/);
+  assert.match(user, /1\. \[etsy\.com\] Dental Recall & Tracker/);
+  assert.match(buildPrompt("Miscellaneous", []).system, /Miscellaneous/);
+
+  assert.deepEqual(parseVerdicts('Sure: [{"i":1,"v":"off-topic"},{"i":3,"v":"different-game"},{"i":9,"v":"off-topic"}]', 3), [
+    "off-topic", "keep", "different-game",
+  ]);
+  assert.deepEqual(parseVerdicts("not json at all", 2), ["keep", "keep"]);
+  assert.deepEqual(parseVerdicts('[{"i":1,"v":"nuke it"}]', 1), ["keep"]);
+
+  const candidates = [
+    { url: "a", title: "Recall Insert", domain: "etsy.com" },
+    { url: "b", title: "Dental Recall Tracker", domain: "etsy.com" },
+  ];
+  const ok = async () => new Response(JSON.stringify({ content: [{ type: "text", text: '[{"i":1,"v":"keep"},{"i":2,"v":"off-topic"}]' }] }));
+  assert.deepEqual([...(await judgeResults("Recall", candidates, { apiKey: "k", fetchImpl: ok as typeof fetch }))], [["b", "off-topic"]]);
+  // fail open: no key, API error, network failure -> nothing rejected
+  assert.equal((await judgeResults("Recall", candidates, { apiKey: "", fetchImpl: ok as typeof fetch })).size, 0);
+  const bad = async () => new Response("nope", { status: 500 });
+  assert.equal((await judgeResults("Recall", candidates, { apiKey: "k", fetchImpl: bad as typeof fetch })).size, 0);
+  const boom = async () => { throw new Error("network"); };
+  assert.equal((await judgeResults("Recall", candidates, { apiKey: "k", fetchImpl: boom as typeof fetch })).size, 0);
 });

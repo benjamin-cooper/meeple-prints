@@ -86,8 +86,22 @@ export const HIDE_REASONS = [
   { value: "other", label: "Other" },
 ] as const;
 
+/**
+ * Rows the AI screen hid on its own (see providers/llm-judge.ts) carry one of
+ * these instead of a person's reason, so the Hidden page can show -- and let
+ * you filter for -- exactly what it decided, and unhide any mistake.
+ */
+export const AUTO_HIDE_REASONS = [
+  { value: "auto:wrong-game", label: "Auto: different game" },
+  { value: "auto:off-topic", label: "Auto: not board-game related" },
+] as const;
+
 export function hideReasonLabel(value: string | null): string | null {
-  return HIDE_REASONS.find((r) => r.value === value)?.label ?? value;
+  return (
+    HIDE_REASONS.find((r) => r.value === value)?.label ??
+    AUTO_HIDE_REASONS.find((r) => r.value === value)?.label ??
+    value
+  );
 }
 
 export function typeLabel(value: string): string {

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { SITE_LABELS, HIDE_REASONS } from "@/lib/constants";
+import { SITE_LABELS, HIDE_REASONS, AUTO_HIDE_REASONS, hideReasonLabel } from "@/lib/constants";
 import { HIDE_REASON_ICONS } from "@/lib/hide-reason-icons";
 
 interface HiddenPrint {
@@ -32,6 +32,7 @@ export default function HiddenPage() {
 const REASON_SELECT_ITEMS = {
   unlabeled: "Unlabeled",
   ...Object.fromEntries(HIDE_REASONS.map((r) => [r.value, r.label])),
+  ...Object.fromEntries(AUTO_HIDE_REASONS.map((r) => [r.value, r.label])),
 };
 
 /**
@@ -73,6 +74,9 @@ function ReasonPicker({ item, onChanged }: { item: HiddenPrint; onChanged: (id: 
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="unlabeled">Unlabeled</SelectItem>
+        {item.hideReason?.startsWith("auto:") && (
+          <SelectItem value={item.hideReason}>{hideReasonLabel(item.hideReason)}</SelectItem>
+        )}
         {HIDE_REASONS.map((r) => {
           const ReasonIcon = HIDE_REASON_ICONS[r.value];
           return (
@@ -102,7 +106,9 @@ function HiddenPageContent() {
     if (!items) return [];
     const q = query.trim().toLowerCase();
     return items.filter((i) => {
-      if (reasonFilter !== "all" && (i.hideReason ?? "unlabeled") !== reasonFilter) return false;
+      if (reasonFilter === "auto") {
+        if (!i.hideReason?.startsWith("auto:")) return false;
+      } else if (reasonFilter !== "all" && (i.hideReason ?? "unlabeled") !== reasonFilter) return false;
       if (q && !i.title.toLowerCase().includes(q) && !i.game.name.toLowerCase().includes(q)) return false;
       return true;
     });
@@ -111,6 +117,7 @@ function HiddenPageContent() {
   const reasonItems = {
     all: "All reasons",
     ...Object.fromEntries(HIDE_REASONS.map((r) => [r.value, r.label])),
+    auto: "Auto-hidden by AI",
     unlabeled: "Unlabeled",
   };
 
@@ -195,8 +202,8 @@ function HiddenPageContent() {
       <div>
         <h1 className="font-display font-extrabold uppercase text-3xl tracking-tight leading-none">Hidden</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Prints dismissed as not relevant, or dropped automatically as a duplicate of a better-reviewed copy.
-          Unhide one to bring it back into Catalog, or click a reason tag to set or change it.
+          Prints dismissed as not relevant, dropped automatically as a duplicate of a better-reviewed copy, or
+          screened out by the AI (filter by &ldquo;Auto-hidden by AI&rdquo; to check its calls). Unhide one to bring it back into Catalog, or click a reason tag to set or change it.
         </p>
       </div>
 
@@ -219,10 +226,11 @@ function HiddenPageContent() {
               />
             </div>
             <Select items={reasonItems} value={reasonFilter} onValueChange={(v) => setReasonFilter(v as string)}>
-              <SelectTrigger className="w-[150px]"><SelectValue placeholder="All reasons" /></SelectTrigger>
+              <SelectTrigger className="w-[190px]"><SelectValue placeholder="All reasons" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All reasons</SelectItem>
                 {HIDE_REASONS.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                <SelectItem value="auto">Auto-hidden by AI</SelectItem>
                 <SelectItem value="unlabeled">Unlabeled</SelectItem>
               </SelectContent>
             </Select>

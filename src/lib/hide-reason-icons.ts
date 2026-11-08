@@ -9,6 +9,8 @@ import { Ban, CircleSlash, FileX, Copy, ThumbsDown, MoreHorizontal, type LucideI
 export const HIDE_REASON_ICONS: Record<string, LucideIcon> = {
   "wrong-game": Ban,
   "off-topic": CircleSlash,
+  "auto:wrong-game": Ban,
+  "auto:off-topic": CircleSlash,
   "not-3d-print": FileX,
   duplicate: Copy,
   "low-quality": ThumbsDown,

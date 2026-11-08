@@ -116,7 +116,10 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // visible corpus -- zero false positives.
   // "kief" added in the nineteenth audit -- a weed-storage container shaped
   // like a sandbox. This game has zero currently-correct results ever.
-  Sand: /sand dune|sand castle|\bsandbox\b|kinetic sand|sand mold|sand play|sand scoop|sand dollar|sand ladder|sand jacuzzi|sand filter|sand clock|spirograph|sand tools?|pattern rollers?|\bkief\b/i,
+  // Word-bounded (twentieth audit) -- "sand play" used to match inside "Sand Player
+  // Board" and "sand dune" inside similar longer words, caught by the invariant
+  // test in rules.test.ts.
+  Sand: /\bsand (dunes?|castles?|molds?|play|scoops?|dollars?|ladders?|jacuzzis?|filters?|clocks?)\b|\bsandbox\b|kinetic sand|spirograph|\bsand tools?\b|pattern rollers?|\bkief\b/i,
   // "blueprints? for luthier"/"mayones" added in the fourth audit, "luthier
   // plans" added in the seventh (same recurring Etsy series, just phrased
   // "Luthier Plans...Blueprint" instead of "Blueprints for luthier") -- a

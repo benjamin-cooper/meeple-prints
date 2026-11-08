@@ -52,7 +52,19 @@ Prisma's own `migrate deploy` doesn't understand the `libsql://` scheme, so sche
 turso db shell meeple-prints < prisma/migrations/<new-migration-folder>/migration.sql
 ```
 
-The daily auto-scan (`vercel.json`) needs `CRON_SECRET` set in Vercel's project env vars (not just `.env.example`) -- Vercel signs its cron requests with it automatically, and the route rejects anything without a matching bearer token. `AUTO_SCAN_BATCH_SIZE` (default 10) is a soft cap: both the cron and manual scan routes set `maxDuration = 60`, and `scanNextBatch` (`src/lib/scan.ts`) stops starting new games once 45s have elapsed rather than risk exceeding that and getting killed mid-run. A game skipped this way is simply first in line next run, since games are scanned in `lastScannedAt` order. Right after deploying (or any time you don't want to wait for the daily sweep to catch up), run `npx tsx scripts/full-scan.ts` once to sweep the whole collection in one go -- point `DATABASE_URL`/`DATABASE_AUTH_TOKEN` at Turso to run it against production instead of local `dev.db`.
+The daily auto-scan (`vercel.json`) needs `CRON_SECRET` set in Vercel's project env vars (not just `.env.example`) -- Vercel signs its cron requests with it automatically, and the route rejects anything without a matching bearer token. `AUTO_SCAN_BATCH_SIZE` (default 20) is a soft cap: both the cron and manual scan routes set `maxDuration = 60`, and `scanNextBatch` (`src/lib/scan.ts`) stops starting new games once 45s have elapsed rather than risk exceeding that and getting killed mid-run. A game skipped this way is simply first in line next run, since games are scanned in `lastScannedAt` order. Right after deploying (or any time you don't want to wait for the daily sweep to catch up), run `npx tsx scripts/full-scan.ts` once to sweep the whole collection in one go -- point `DATABASE_URL`/`DATABASE_AUTH_TOKEN` at Turso to run it against production instead of local `dev.db`.
+
+## Keeping results clean
+
+Search results for games named after ordinary words (Recall, Sanctuary, Falling...) are mostly unrelated content, so there are layers of filters, all in `src/lib/providers/`:
+
+- `known-collisions.ts` -- per-game exclusions, a few general ones (`<N>mm scale` wargaming markers, dollhouse/book-nook models), and `ETSY_SIGNAL_REQUIRED_GAMES`, where Etsy results must look like a 3D-print listing.
+- `non-3d-print-terms.ts` -- Etsy-only content-type terms (planners, wallpapers, spiritual downloads...).
+- Hide a result with a reason (the card's menu) and those reasons are what the next rule is written from. "Not board-game related" is for results that aren't about any board game at all.
+
+Hidden rows that a rule already explains are deleted automatically every Sunday by the cron (`src/lib/tombstone.ts`); `npx tsx scripts/tombstone-cleanup.ts` runs the same thing by hand. `npx tsx scripts/etsy-signal-candidates.ts` lists games that now qualify for the Etsy signal requirement (and checks it wouldn't cut anything visible). `npm test` pins the rules against real titles -- add a kept title and a junk title whenever you add a rule.
+
+The daily cron also syncs your BGG collection. It refuses to drop games when BGG returns an empty collection, or (unattended) when more than 30% of your games would vanish, because dropped games take their saved prints with them.
 
 ## Notes for later
 

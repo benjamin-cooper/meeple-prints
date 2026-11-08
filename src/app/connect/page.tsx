@@ -77,6 +77,15 @@ export default function ConnectPage() {
   // Date.now() can't be called during render (impure); read it once after mount instead.
   useEffect(() => setNow(Date.now()), []);
 
+  // Opens the sign-in form with the saved username filled in and the cursor
+  // in the password field -- an expired session still shows as "Connected",
+  // so without this there was no obvious way back in.
+  const openReconnect = () => {
+    setShowReconnect(true);
+    setUsername((u) => u || settings?.bggUsername || "");
+    setTimeout(() => document.getElementById("bgg-password")?.focus(), 50);
+  };
+
   const handleLogin = async () => {
     if (!username.trim() || !password) { toast.error("Enter your BGG username and password."); return; }
     setLoggingIn(true);
@@ -104,6 +113,14 @@ export default function ConnectPage() {
     try {
       const res = await fetch("/api/bgg/collection/import", { method: "POST" });
       const data = await res.json();
+      if (res.status === 401) {
+        toast.error(data.error ?? "Your BGG session expired.", {
+          action: { label: "Reconnect", onClick: openReconnect },
+          duration: 15000,
+        });
+        openReconnect();
+        return;
+      }
       if (!res.ok) throw new Error(data.error ?? "Sync failed.");
       const scanNote = data.newGames > 0 ? `, scanned ${data.scanned} of ${data.newGames} new game${data.newGames === 1 ? "" : "s"}` : "";
       const dropped: DroppedGame[] = data.droppedGames ?? [];
@@ -275,8 +292,8 @@ export default function ConnectPage() {
           <p className="text-sm">
             Connected as <span className="font-semibold font-mono">{settings.bggUsername}</span>
           </p>
-          <button className="text-xs text-muted-foreground underline underline-offset-4" onClick={() => setShowReconnect(true)}>
-            Use a different account
+          <button className="text-xs text-muted-foreground underline underline-offset-4" onClick={openReconnect}>
+            Reconnect or use a different account
           </button>
         </div>
       ) : (
@@ -318,10 +335,13 @@ export default function ConnectPage() {
               </Button>
             </div>
             {isStale && (
-              <p className="text-xs text-muted-foreground">
-                Synced automatically once a day alongside the auto-scan below, so this should rarely go stale
-                on its own -- if it does, it likely means your BGG session expired. Reconnecting above will fix it.
-              </p>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground">
+                  Synced automatically once a day, so this should rarely go stale -- if it does, your BGG session
+                  has most likely expired.
+                </p>
+                <Button variant="outline" size="sm" className="shrink-0" onClick={openReconnect}>Reconnect</Button>
+              </div>
             )}
           </div>
         );

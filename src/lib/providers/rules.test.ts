@@ -40,8 +40,7 @@ const REAL: [game: string, title: string, domain?: string][] = [
   ["Speakeasy", "SPEAKEASY 5 - POKER CHIPS - POKER CHIPS", "cults3d.com"],
   ["Iliad", "Reiner Knizia's Iliad Tile Protector"],
   ["Iliad", "Iliad Game Insert (Deluxe Edition)"],
-  ["Iliad", "Cable cover box for Iliad Box", "thingiverse.com"],
-  ["Lisboa", "Lisboa Tram OcCre 1/24 spare parts", "thingiverse.com"],
+  ["Iliad", "Iliad Box Insert"],
   ["The White Castle", "The White Castle Insert"],
   ["The White Castle", "The White Castle - dice bridge", "cults3d.com"],
   ["Recall", "Recall Boardgame Insert", "thingiverse.com"],
@@ -72,6 +71,10 @@ const JUNK: [game: string, title: string, domain?: string][] = [
   ["Sanctuary", "Lemurian Forest Sanctuary | Deep Healing | Nature Goddess Phone", "etsy.com"],
   ["Falling", "Falling Leaves Handprint Art, Preschool Fall Activity, Printable Poem Craft", "etsy.com"],
   ["Iliad", "ZIMABLADE NAS - ILIAD BOX STYLE", "printables.com"],
+  ["Iliad", "Cable cover box for Iliad Box", "thingiverse.com"],
+  ["Iliad", "Iliad Box vertical stand", "printables.com"],
+  ["Lisboa", "Lisboa Tram OcCre 1/24 spare parts", "thingiverse.com"],
+  ["Lisboa", "Lisbon Tram - Electrico Lisboa - Carris", "thingiverse.com"],
   ["On Mars", "Olympus Mons on Mars", "thingiverse.com"],
 ];
 

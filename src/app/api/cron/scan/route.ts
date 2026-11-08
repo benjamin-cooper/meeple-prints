@@ -70,6 +70,16 @@ export async function GET(request: NextRequest) {
     create: { id: "singleton", lastCronRunAt: new Date() },
   });
 
+  // One line per run so Vercel's Logs tab (search "[cron]") shows the cron
+  // actually ran, not just when something failed.
+  console.log(
+    `[cron] ok: scanned ${result.scanned} games (${result.newPrints} new prints), ` +
+      `misc ${miscScanned ? "scanned" : "skipped"}, ` +
+      `tombstones ${tombstonesDeleted === null ? "not due" : `deleted ${tombstonesDeleted}`}, ` +
+      `sync ${sync ? (sync.dropDetectionSkipped ? `skipped drops (${sync.dropDetectionSkipped.reason})` : `${sync.imported} games`) : "none"}, ` +
+      `${Math.round((Date.now() - cronStart) / 1000)}s`
+  );
+
   return Response.json({
     ...result,
     tombstonesDeleted,

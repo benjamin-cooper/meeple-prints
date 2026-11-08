@@ -290,7 +290,12 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // Deliberately left bare "iliad box" alone: a currently-visible real
   // result ("Cable cover box for Iliad Box") uses that exact phrase too,
   // so it can't be safely distinguished from the router by title alone.
-  Iliad: /greek mythology|escape room|word clouds?|digital stamps?|trojan war|\bagamemnon\b|\bachilles\b|freebox|\bnas\b|wifi\s*6|zimablade/i,
+  // "cable cover"/"iliad box <part>"/"feet for iliad" added after the
+  // "Cable cover box for Iliad Box" router accessory was confirmed by hand as
+  // not this game. Still deliberately NOT a bare "iliad box": a real insert
+  // could plausibly be titled "Iliad Box Insert", so only the router-part
+  // wording (cover, stand, feet, ...) is excluded.
+  Iliad: /greek mythology|escape room|word clouds?|digital stamps?|trojan war|\bagamemnon\b|\bachilles\b|freebox|\bnas\b|wifi\s*6|zimablade|cable cover|iliad ?box (vertical|stand|cover|feet|support|mount|wall)|feet for iliad/i,
   // "Flip 7" collides with THREE unrelated real products that all happen to
   // share the name: the Samsung Galaxy Z Flip 7 (foldable phone cases/
   // skins/stands), the JBL Flip 7 (bluetooth speaker holders), and GoPro's
@@ -305,7 +310,10 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // Lisboa (the board game, named for the city) collides with the city's
   // two football clubs, Benfica and Sporting CP -- team logos, stadium
   // models, signed photos.
-  Lisboa: /benfica|sporting (clube|de lisboa)|soccer team|futebol/i,
+  // "tram"/"carris"/"occre" added after "Lisboa Tram OcCre 1/24 spare parts"
+  // was confirmed by hand as not this game (real Lisbon tram models, a
+  // different hobby; this game is about rebuilding the city, not trams).
+  Lisboa: /benfica|sporting (clube|de lisboa)|soccer team|futebol|\btrams?\b|\bcarris\b|\boccre\b/i,
   // Twelfth audit (2026-08-22-ish, a week's worth of manual hides reviewed
   // at once). "Tea Witches" collides with Halloween witch-themed tea party
   // content (tea light candle holders, witch tea party games, tea bag

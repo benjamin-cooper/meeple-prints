@@ -20,6 +20,7 @@ import {
 import { NON_3D_PRINT_PATTERN } from "./non-3d-print-terms";
 import { guessTypeFromTitle } from "./guess-type";
 import { dropGuardVerdict } from "../drop-guard";
+import { isGameSpecificMiscResult, MISC_SEARCH_TERMS } from "./misc-terms";
 
 /** Every general rule a real result for `game` has to survive. */
 function isExcluded(game: string, title: string, domain = "printables.com"): boolean {
@@ -148,4 +149,30 @@ test("collection sync never treats an empty or mostly-missing response as a mass
   assert.equal(dropGuardVerdict({ ...base, importedCount: 140, droppedCount: 4 }), "ok");
   assert.equal(dropGuardVerdict({ existingCount: 6, unattended: true, importedCount: 3, droppedCount: 3 }), "ok");
   assert.equal(dropGuardVerdict({ ...base, importedCount: 144, droppedCount: 0 }), "ok");
+});
+
+test("Miscellaneous rejects inserts made for one specific game but keeps generic accessories", () => {
+  const specific = [
+    "Snow Colony – Board Game Organizer / Insert (3D Printable STL)",
+    "Isle of Trains: All Aboard – Board Game Organizer / Insert (3D Printable STL)",
+    "Zombicide 2nd Edition Board Game Organizer | Insert | Premium Storage Solution",
+    "Barrage ALL IN Board Game Insert / Organizer",
+    "Catan Board Game with 5-6 Player Extension Box Insert Organizer",
+    "Token & Dice Tray box insert for Horizon Zero Dawn the board game",
+    "TOWER OF GODS: Olympus – An adventure game featuring dice and the Olympian gods (Print & Play)",
+  ];
+  const generic = [
+    "Dice Tower",
+    "Board Game Token Tray and Card Holder",
+    "Universal Board Game Organizer",
+    "Gridfinity Board Game Insert",
+    "Wyrmwood Table Accessory - Hex tile cup holder.stl",
+    "Dungeon Master Screen Clip - Straight",
+    "Stegosaurus Meeple",
+    "Battle Meeple",
+  ];
+  for (const t of specific) assert.equal(isGameSpecificMiscResult(t), true, t);
+  for (const t of generic) assert.equal(isGameSpecificMiscResult(t), false, t);
+  // ...and the scan-time filters for every Miscellaneous term apply it.
+  for (const q of MISC_SEARCH_TERMS) assert.equal(q.extraFilter?.(specific[0]), false, q.term);
 });

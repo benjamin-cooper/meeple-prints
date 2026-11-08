@@ -17,6 +17,8 @@
  * correctly marked the game itself inCollection: false.
  */
 import { prisma } from "@/lib/prisma";
+import { MISC_GAME_BGG_ID } from "@/lib/constants";
+import { isGameSpecificMiscResult } from "@/lib/providers/misc-terms";
 
 export async function GET() {
   const [products, discovered, hiddenCount] = await Promise.all([
@@ -37,6 +39,9 @@ export async function GET() {
   const saved = products.map((p) => ({ ...p, kind: "saved" as const }));
   const notYetSaved = discovered
     .filter((d) => !savedUrls.has(d.url))
+    // Applied at read time so rows found before this rule existed disappear
+    // from view immediately (the weekly cleanup then deletes them).
+    .filter((d) => !(d.game.bggId === MISC_GAME_BGG_ID && isGameSpecificMiscResult(d.title)))
     .map((d) => ({
       id: d.id,
       url: d.url,

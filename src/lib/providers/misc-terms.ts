@@ -1,3 +1,5 @@
+import { guessTypeFromTitle } from "./guess-type";
+
 export interface MiscSearchTerm {
   term: string;
   /**
@@ -37,7 +39,7 @@ export function hasTabletopSignal(title: string): boolean {
  * different case -- a specific gaming-furniture brand name, precise enough
  * on its own that it skips the tabletop-signal check (see extraFilter above).
  */
-export const MISC_SEARCH_TERMS: MiscSearchTerm[] = [
+const RAW_MISC_SEARCH_TERMS: MiscSearchTerm[] = [
   { term: "dice tower", extraFilter: hasTabletopSignal },
   { term: "dice tray", extraFilter: hasTabletopSignal },
   { term: "meeple", extraFilter: hasTabletopSignal },
@@ -51,3 +53,35 @@ export const MISC_SEARCH_TERMS: MiscSearchTerm[] = [
   { term: "wyrmwood table", extraFilter: null },
   { term: "wyrmwood vault", extraFilter: null },
 ];
+
+// Words in the part of a title before "board game" that mark a genuinely
+// generic product ("Universal Board Game Organizer", "Gridfinity ...") rather
+// than a game's name.
+const GENERIC_BEFORE_BOARD_GAME =
+  /\b(universal|generic|modular|customi[sz]able|custom|parametric|gridfinity|stackable|diy|best|ultimate|simple|compact|portable|foldable|printable|3d)\b/i;
+
+/**
+ * Miscellaneous is for accessories that aren't tied to a title you own, but
+ * "board game insert organizer" (and print-and-play listings) return almost
+ * only things made for ONE specific game -- "Zombicide 2nd Edition Board Game
+ * Organizer", "Snow Colony - Board Game Organizer / Insert" -- for games that
+ * aren't in the collection, so they don't belong anywhere here. A name before
+ * "board game" on an insert/organizer title is the tell; a bare "Board Game
+ * Token Tray" or "Universal Board Game Organizer" has none. Known gap: a
+ * game-specific insert that never says "board game" still gets through.
+ */
+export function isGameSpecificMiscResult(title: string): boolean {
+  if (/print\s*(&|&amp;|and|n)\s*play/i.test(title)) return true;
+  // "... insert for <Game> the board game": the name comes after, not before.
+  if (/\bfor\b.{2,}\bthe\s+board\s*game\b/i.test(title)) return true;
+  const match = /\bboard\s*game\b/i.exec(title);
+  if (!match) return false;
+  const before = title.slice(0, match.index);
+  if (!/[a-z0-9]/i.test(before) || GENERIC_BEFORE_BOARD_GAME.test(before)) return false;
+  return guessTypeFromTitle(title) === "insert";
+}
+
+export const MISC_SEARCH_TERMS: MiscSearchTerm[] = RAW_MISC_SEARCH_TERMS.map((t) => ({
+  term: t.term,
+  extraFilter: (title) => !isGameSpecificMiscResult(title) && (t.extraFilter?.(title) ?? true),
+}));

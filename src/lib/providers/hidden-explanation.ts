@@ -4,6 +4,8 @@ import {
   DOLLHOUSE_MINIATURE_PATTERN,
   failsEtsyPrintSignal,
 } from "./known-collisions";
+import { MISC_GAME_NAME } from "../constants";
+import { isGameSpecificMiscResult } from "./misc-terms";
 import { NON_3D_PRINT_PATTERN } from "./non-3d-print-terms";
 import { findDuplicateIndices, type Dedupable } from "./dedupe";
 
@@ -31,6 +33,10 @@ export function explainHiddenRows(allRowsAcrossGames: RowForExplanation[]): Map<
     if (!r.hidden) continue;
     const collisionRe = KNOWN_COLLISION_EXCLUSIONS[r.gameName];
     if (collisionRe && collisionRe.test(r.title)) {
+      explained.set(r.id, "collision");
+      continue;
+    }
+    if (r.gameName === MISC_GAME_NAME && isGameSpecificMiscResult(r.title)) {
       explained.set(r.id, "collision");
       continue;
     }

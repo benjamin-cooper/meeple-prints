@@ -8,6 +8,8 @@
  * Shared by scripts/tombstone-cleanup.ts (manual) and the weekly cron.
  */
 import { prisma } from "@/lib/prisma";
+import { MISC_GAME_NAME } from "@/lib/constants";
+import { isGameSpecificMiscResult } from "@/lib/providers/misc-terms";
 import { explainHiddenRows } from "@/lib/providers/hidden-explanation";
 
 export async function runTombstoneCleanup(): Promise<number> {
@@ -19,8 +21,17 @@ export async function runTombstoneCleanup(): Promise<number> {
   });
 
   const explained = explainHiddenRows(allRows.map((r) => ({ ...r, gameName: r.game.name })));
-  if (explained.size === 0) return 0;
 
-  await prisma.discoveredPrint.deleteMany({ where: { id: { in: [...explained.keys()] } } });
-  return explained.size;
+  // Visible Miscellaneous rows for one specific game's insert/print-and-play
+  // listing (see isGameSpecificMiscResult) aren't hidden, so the above never
+  // sees them -- but the scan filter now stops them coming back, and the
+  // Catalog already hides them at read time, so drop them from the table too.
+  const ids = new Set(explained.keys());
+  for (const r of allRows) {
+    if (!r.hidden && r.game.name === MISC_GAME_NAME && isGameSpecificMiscResult(r.title)) ids.add(r.id);
+  }
+  if (ids.size === 0) return 0;
+
+  await prisma.discoveredPrint.deleteMany({ where: { id: { in: [...ids] } } });
+  return ids.size;
 }

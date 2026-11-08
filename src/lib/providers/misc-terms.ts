@@ -1,5 +1,3 @@
-import { guessTypeFromTitle } from "./guess-type";
-
 export interface MiscSearchTerm {
   term: string;
   /**
@@ -58,7 +56,9 @@ const RAW_MISC_SEARCH_TERMS: MiscSearchTerm[] = [
 // generic product ("Universal Board Game Organizer", "Gridfinity ...") rather
 // than a game's name.
 const GENERIC_BEFORE_BOARD_GAME =
-  /\b(universal|generic|modular|customi[sz]able|custom|parametric|gridfinity|stackable|diy|best|ultimate|simple|compact|portable|foldable|printable|3d)\b/i;
+  /\b(universal|generic|modular|customi[sz]able|custom|parametric|gridfinity|stackable|diy|best|ultimate|simple|compact|portable|foldable|printable|3d|tabletop|tray|trays|wooden|plastic|metal|acrylic|resin|magnetic|folding|hex|hexagonal)\b/i;
+
+const GENERIC_AFTER_PHRASE = /^(and|for|with|storage|box|tray|set|kit|stl|file|files|3d|printable|universal|modular|v\d.*)$/i;
 
 /**
  * Miscellaneous is for accessories that aren't tied to a title you own, but
@@ -74,11 +74,16 @@ export function isGameSpecificMiscResult(title: string): boolean {
   if (/print\s*(&|&amp;|and|n)\s*play/i.test(title)) return true;
   // "... insert for <Game> the board game": the name comes after, not before.
   if (/\bfor\b.{2,}\bthe\s+board\s*game\b/i.test(title)) return true;
+  // "Board Game Insert Organizer Heroes of Land, Air & Sea ...": a title that
+  // opens generically but is followed by a capitalised name.
+  const named = /^board\s*game\s+(?:insert|organi[sz]er)(?:\s+(?:insert|organi[sz]er))?\s+(\S+)/i.exec(title);
+  if (named && /^[A-Z]/.test(named[1]) && !GENERIC_AFTER_PHRASE.test(named[1])) return true;
   const match = /\bboard\s*game\b/i.exec(title);
   if (!match) return false;
   const before = title.slice(0, match.index);
-  if (!/[a-z0-9]/i.test(before) || GENERIC_BEFORE_BOARD_GAME.test(before)) return false;
-  return guessTypeFromTitle(title) === "insert";
+  // A name in front of "board game" on any accessory type ("ICE Board Game
+  // 2nd Edition Token Tray") means it was made for that one game.
+  return /[a-z0-9]/i.test(before) && !GENERIC_BEFORE_BOARD_GAME.test(before);
 }
 
 export const MISC_SEARCH_TERMS: MiscSearchTerm[] = RAW_MISC_SEARCH_TERMS.map((t) => ({

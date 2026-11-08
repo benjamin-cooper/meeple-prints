@@ -10,6 +10,7 @@
  */
 import { scanNextBatch, DEFAULT_BATCH_TIME_BUDGET_MS } from "@/lib/scan";
 import { syncBggCollection } from "@/lib/collection-sync";
+import { runTombstoneCleanup } from "@/lib/tombstone";
 import { prisma } from "@/lib/prisma";
 import type { NextRequest } from "next/server";
 
@@ -27,10 +28,27 @@ export async function GET(request: NextRequest) {
   // 60s ceiling with the scan batch below -- a sync hiccup shouldn't block
   // scanning, so it's best-effort and time-boxed on its own.
   const cronStart = Date.now();
-  await syncBggCollection().catch(() => null);
+  const sync = await syncBggCollection(undefined, { unattended: true }).catch((err) => {
+    // Swallowed so scanning still runs, but not silently -- a sync that
+    // fails every night (expired BGG session) was otherwise invisible.
+    console.error("[cron] collection sync failed:", err instanceof Error ? err.message : err);
+    return null;
+  });
+
+  // Weekly (Sundays, UTC): delete hidden rows that a shipped rule already
+  // explains. Used to be a manual script that had to be remembered after
+  // every rules change; the Hidden page's "explained" verdicts and this use
+  // the same explainHiddenRows, so nothing unexplained is ever touched.
+  let tombstonesDeleted: number | null = null;
+  if (new Date().getUTCDay() === 0) {
+    tombstonesDeleted = await runTombstoneCleanup().catch((err) => {
+      console.error("[cron] tombstone cleanup failed:", err instanceof Error ? err.message : err);
+      return null;
+    });
+  }
   const remainingBudget = Math.max(5_000, DEFAULT_BATCH_TIME_BUDGET_MS - (Date.now() - cronStart));
 
-  const limit = parseInt(process.env.AUTO_SCAN_BATCH_SIZE ?? "10") || 10;
+  const limit = parseInt(process.env.AUTO_SCAN_BATCH_SIZE ?? "20") || 20;
   const result = await scanNextBatch(limit, remainingBudget);
 
   // Only the real scheduled cron sets this -- not the manual "Scan now"
@@ -42,5 +60,9 @@ export async function GET(request: NextRequest) {
     create: { id: "singleton", lastCronRunAt: new Date() },
   });
 
-  return Response.json(result);
+  return Response.json({
+    ...result,
+    tombstonesDeleted,
+    dropDetectionSkipped: sync?.dropDetectionSkipped ?? null,
+  });
 }

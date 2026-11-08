@@ -9,7 +9,7 @@ import { scanNextBatch } from "@/lib/scan";
 export const maxDuration = 60;
 
 export async function POST() {
-  const limit = parseInt(process.env.AUTO_SCAN_BATCH_SIZE ?? "10") || 10;
+  const limit = parseInt(process.env.AUTO_SCAN_BATCH_SIZE ?? "20") || 20;
   const result = await scanNextBatch(limit);
   return Response.json(result);
 }

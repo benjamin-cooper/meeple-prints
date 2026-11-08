@@ -75,7 +75,6 @@ export default function ConnectPage() {
       .then((games: Game[]) => setNoisyGames(games.filter((g) => g.inCollection && isNoisyGame(g.discoveredStats))));
   }, []);
   // Date.now() can't be called during render (impure); read it once after mount instead.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setNow(Date.now()), []);
 
   const handleLogin = async () => {
@@ -108,6 +107,13 @@ export default function ConnectPage() {
       if (!res.ok) throw new Error(data.error ?? "Sync failed.");
       const scanNote = data.newGames > 0 ? `, scanned ${data.scanned} of ${data.newGames} new game${data.newGames === 1 ? "" : "s"}` : "";
       const dropped: DroppedGame[] = data.droppedGames ?? [];
+      if (data.dropDetectionSkipped) {
+        toast.warning(
+          `BGG returned an empty collection, so nothing was removed (${data.dropDetectionSkipped.wouldDrop} games would have been). Try Sync again in a minute.`
+        );
+        refresh();
+        return;
+      }
       toast.success(`Imported ${data.imported} game${data.imported === 1 ? "" : "s"}${scanNote}.`, dropped.length > 0 ? {
         action: {
           label: `Review ${dropped.length} removed`,

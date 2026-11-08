@@ -230,6 +230,15 @@ async function scanOne(game: { id: number; name: string; bggId: number }): Promi
 // means anything skipped this way is simply first in line next time.
 export const DEFAULT_BATCH_TIME_BUDGET_MS = 45_000;
 
+// Games are scanned a few at a time rather than strictly one after another:
+// a single game spends most of its time waiting on provider network
+// timeouts, so a purely sequential loop only got through a handful of games
+// per 45s run -- a full pass over the collection took weeks. A small fixed
+// pool keeps the extra load on each provider modest (the per-worker 400ms
+// courtesy delay still applies) while cutting the full-pass time roughly
+// by the pool size.
+const SCAN_CONCURRENCY = 3;
+
 async function scanGamesWithBudget(
   games: { id: number; name: string; bggId: number }[],
   budgetMs: number
@@ -237,12 +246,24 @@ async function scanGamesWithBudget(
   const start = Date.now();
   let scanned = 0;
   let newPrints = 0;
-  for (const game of games) {
-    if (Date.now() - start > budgetMs) break;
-    newPrints += await scanOne(game);
-    scanned++;
-    await new Promise((r) => setTimeout(r, 400));
+  let next = 0;
+
+  async function worker() {
+    while (next < games.length && Date.now() - start <= budgetMs) {
+      const game = games[next++];
+      try {
+        newPrints += await scanOne(game);
+        scanned++;
+      } catch (err) {
+        // One game's failure shouldn't stop the rest of the batch; it just
+        // keeps its old lastScannedAt and comes up first next time.
+        console.error(`[scan] ${game.name} failed:`, err instanceof Error ? err.message : err);
+      }
+      await new Promise((r) => setTimeout(r, 400));
+    }
   }
+
+  await Promise.all(Array.from({ length: Math.min(SCAN_CONCURRENCY, games.length) }, worker));
   return { scanned, newPrints };
 }
 

@@ -16,29 +16,10 @@
  *   DATABASE_URL=... DATABASE_AUTH_TOKEN=... npx tsx scripts/tombstone-cleanup.ts   # Turso prod
  */
 import "dotenv/config";
-import { prisma } from "../src/lib/prisma";
-import { explainHiddenRows } from "../src/lib/providers/hidden-explanation";
+import { runTombstoneCleanup } from "../src/lib/tombstone";
 
-async function main() {
-  const allRows = await prisma.discoveredPrint.findMany({
-    select: {
-      id: true, title: true, domain: true, url: true, ratingCount: true, likesCount: true, hidden: true,
-      gameId: true, game: { select: { name: true } },
-    },
-  });
-
-  const explained = explainHiddenRows(allRows.map((r) => ({ ...r, gameName: r.game.name })));
-
-  if (explained.size === 0) {
-    console.log("Nothing explained -- no tombstones to delete.");
-    return;
-  }
-
-  await prisma.discoveredPrint.deleteMany({ where: { id: { in: [...explained.keys()] } } });
-  console.log(`Deleted ${explained.size} explained tombstone row(s).`);
-}
-
-main()
+runTombstoneCleanup()
+  .then((n) => console.log(n === 0 ? "Nothing explained -- no tombstones to delete." : `Deleted ${n} explained tombstone row(s).`))
   .catch((err) => {
     console.error(err);
     process.exit(1);

@@ -19,6 +19,7 @@ import { getBggCollection } from "@/lib/bgg";
 import { scanGamesWithBudget } from "@/lib/scan";
 import { prisma } from "@/lib/prisma";
 import { MISC_GAME_BGG_ID } from "@/lib/constants";
+import { dropGuardVerdict } from "@/lib/drop-guard";
 
 export interface CollectionSyncResult {
   imported: number;
@@ -27,13 +28,20 @@ export interface CollectionSyncResult {
   scanned: number;
   /** Full detail on what dropped, not just the count. */
   droppedGames: { id: number; name: string; deletedProductCount: number }[];
+  /**
+   * Set when drop detection was skipped because the response looked wrong
+   * (see the guard below) -- nothing was dropped or deleted, and the next
+   * sync will try again.
+   */
+  dropDetectionSkipped?: { wouldDrop: number; reason: "empty-response" | "large-drop" };
 }
 
 /** Bounds the "scan newly added games" step regardless of caller, since the cron path has to share its 60s ceiling with the main scan batch that runs after this. */
 const NEW_GAME_SCAN_BUDGET_MS = 15_000;
 
 export async function syncBggCollection(
-  newGameScanBudgetMs: number = NEW_GAME_SCAN_BUDGET_MS
+  newGameScanBudgetMs: number = NEW_GAME_SCAN_BUDGET_MS,
+  options: { unattended?: boolean } = {}
 ): Promise<CollectionSyncResult | null> {
   const settings = await prisma.settings.findUnique({ where: { id: "singleton" } });
   if (!settings?.bggSessionId || !settings.bggUsername) return null;
@@ -84,7 +92,23 @@ export async function syncBggCollection(
   });
   // The miscellaneous pseudo-game will never appear in a real BGG
   // collection response, so it'd otherwise get marked dropped on every sync.
-  const dropped = existing.filter((g) => !importedIds.has(g.bggId) && g.bggId !== MISC_GAME_BGG_ID);
+  let dropped = existing.filter((g) => !importedIds.has(g.bggId) && g.bggId !== MISC_GAME_BGG_ID);
+
+  const realExisting = existing.filter((g) => g.bggId !== MISC_GAME_BGG_ID).length;
+  const verdict = dropGuardVerdict({
+    importedCount: games.length,
+    droppedCount: dropped.length,
+    existingCount: realExisting,
+    unattended: options.unattended ?? false,
+  });
+  const dropDetectionSkipped: CollectionSyncResult["dropDetectionSkipped"] =
+    verdict === "ok" ? undefined : { wouldDrop: dropped.length, reason: verdict };
+  if (dropDetectionSkipped) {
+    console.error(
+      `[collection-sync] skipped drop detection (${dropDetectionSkipped.reason}): would have dropped ${dropped.length} of ${realExisting} games`
+    );
+    dropped = [];
+  }
 
   const deletedCountByGameId = new Map<number, number>();
   if (dropped.length) {
@@ -119,5 +143,6 @@ export async function syncBggCollection(
     newGames: newBggIds.length,
     scanned: scannedCount,
     droppedGames: dropped.map((g) => ({ id: g.id, name: g.name, deletedProductCount: deletedCountByGameId.get(g.id) ?? 0 })),
+    ...(dropDetectionSkipped ? { dropDetectionSkipped } : {}),
   };
 }

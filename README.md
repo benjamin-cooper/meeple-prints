@@ -64,7 +64,7 @@ Search results for games named after ordinary words (Recall, Sanctuary, Falling.
 
 Hidden rows that a rule already explains are deleted automatically every Sunday by the cron (`src/lib/tombstone.ts`); `npx tsx scripts/tombstone-cleanup.ts` runs the same thing by hand. `npx tsx scripts/etsy-signal-candidates.ts` lists games that now qualify for the Etsy signal requirement (and checks it wouldn't cut anything visible). `npm test` pins the rules against real titles -- add a kept title and a junk title whenever you add a rule.
 
-The daily cron also syncs your BGG collection. It refuses to drop games when BGG returns an empty collection, or (unattended) when more than 30% of your games would vanish, because dropped games take their saved prints with them.
+The daily cron also rescans the Miscellaneous pseudo-game (dice towers, generic organizers) whenever it's over 14 days old -- it's outside the normal per-game rotation, and its results used to go months stale while ranking first by likes. It also syncs your BGG collection. It refuses to drop games when BGG returns an empty collection, or (unattended) when more than 30% of your games would vanish, because dropped games take their saved prints with them.
 
 ## Notes for later
 

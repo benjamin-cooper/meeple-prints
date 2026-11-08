@@ -18,6 +18,7 @@ import {
   failsEtsyPrintSignal,
 } from "@/lib/providers/known-collisions";
 import { MISC_GAME_BGG_ID } from "@/lib/constants";
+import { MISC_SEARCH_TERMS } from "@/lib/providers/misc-terms";
 
 /**
  * searchAllProviders already dedupes cross-domain matches within one call,
@@ -283,6 +284,26 @@ export async function scanNextBatch(
   });
 
   return scanGamesWithBudget(games, budgetMs);
+}
+
+/**
+ * The miscellaneous pseudo-game is excluded from scanNextBatch (it needs its
+ * own curated query list, not a search for the word "Miscellaneous"), which
+ * left its results refreshed only when someone pressed its button -- they
+ * went 100+ days stale while ranking at the top of the Catalog by likes.
+ * Scanned here instead whenever it's older than MISC_RESCAN_AFTER_DAYS. Its
+ * 13 queries run at once, so callers should only invoke this with real
+ * time to spare.
+ */
+const MISC_RESCAN_AFTER_DAYS = 14;
+
+export async function scanMiscIfStale(): Promise<boolean> {
+  const misc = await prisma.game.findUnique({ where: { bggId: MISC_GAME_BGG_ID } });
+  if (!misc) return false;
+  const staleBefore = Date.now() - MISC_RESCAN_AFTER_DAYS * 24 * 60 * 60 * 1000;
+  if (misc.lastScannedAt && misc.lastScannedAt.getTime() > staleBefore) return false;
+  await scanGame(misc, { queries: MISC_SEARCH_TERMS });
+  return true;
 }
 
 /** Exported for the BGG collection sync's own "scan newly added games" step. */

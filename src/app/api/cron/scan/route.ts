@@ -8,7 +8,7 @@
  * proxy.ts (it has no browser session to check), so this bearer check is
  * its only protection.
  */
-import { scanNextBatch, DEFAULT_BATCH_TIME_BUDGET_MS } from "@/lib/scan";
+import { scanNextBatch, scanMiscIfStale, DEFAULT_BATCH_TIME_BUDGET_MS } from "@/lib/scan";
 import { syncBggCollection } from "@/lib/collection-sync";
 import { runTombstoneCleanup } from "@/lib/tombstone";
 import { prisma } from "@/lib/prisma";
@@ -46,6 +46,16 @@ export async function GET(request: NextRequest) {
       return null;
     });
   }
+
+  // Miscellaneous is outside the normal rotation; refresh it when it's
+  // stale and there's comfortably room left in this run's 60s ceiling.
+  let miscScanned = false;
+  if (Date.now() - cronStart < 15_000) {
+    miscScanned = await scanMiscIfStale().catch((err) => {
+      console.error("[cron] miscellaneous scan failed:", err instanceof Error ? err.message : err);
+      return false;
+    });
+  }
   const remainingBudget = Math.max(5_000, DEFAULT_BATCH_TIME_BUDGET_MS - (Date.now() - cronStart));
 
   const limit = parseInt(process.env.AUTO_SCAN_BATCH_SIZE ?? "20") || 20;
@@ -63,6 +73,7 @@ export async function GET(request: NextRequest) {
   return Response.json({
     ...result,
     tombstonesDeleted,
+    miscScanned,
     dropDetectionSkipped: sync?.dropDetectionSkipped ?? null,
   });
 }

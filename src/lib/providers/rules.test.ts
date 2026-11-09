@@ -189,8 +189,10 @@ test("Miscellaneous rejects inserts made for one specific game but keeps generic
 test("the AI screen: scope, prompt, and parsing all lean toward keeping", async () => {
   assert.equal(shouldJudge("Miscellaneous", undefined), true);
   assert.equal(shouldJudge("Recall", undefined), true);
-  assert.equal(shouldJudge("Ticket to Ride", undefined), false);
-  assert.equal(shouldJudge("Ticket to Ride", "all"), true);
+  assert.equal(shouldJudge("Ticket to Ride", undefined), true);
+  assert.equal(shouldJudge("Ticket to Ride", "noisy"), false);
+  assert.equal(shouldJudge("Recall", "noisy"), true);
+  assert.equal(shouldJudge("Miscellaneous", "noisy"), true);
   assert.equal(shouldJudge("Recall", "off"), false);
 
   const { system, user } = buildPrompt("Recall", [{ url: "u1", title: "Dental Recall &amp; Tracker", domain: "etsy.com" }]);

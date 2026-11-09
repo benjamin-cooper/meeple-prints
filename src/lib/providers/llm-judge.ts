@@ -27,14 +27,14 @@ const CHUNK_SIZE = 40;
 const TIMEOUT_MS = 5_000;
 
 /**
- * Which games get the second opinion. Default: Miscellaneous plus the games
- * already known to be mostly Etsy noise. LLM_JUDGE_SCOPE=all widens it to
- * every game; =off disables it.
+ * Which games get the second opinion. Default: every game. LLM_JUDGE_SCOPE=noisy
+ * narrows it to Miscellaneous plus the games already known to be mostly Etsy
+ * noise; =off disables it.
  */
 export function shouldJudge(gameName: string, scope: string | undefined = process.env.LLM_JUDGE_SCOPE): boolean {
   if (scope === "off") return false;
-  if (scope === "all") return true;
-  return gameName === MISC_GAME_NAME || ETSY_SIGNAL_REQUIRED_GAMES.has(gameName);
+  if (scope === "noisy") return gameName === MISC_GAME_NAME || ETSY_SIGNAL_REQUIRED_GAMES.has(gameName);
+  return true;
 }
 
 function decodeEntities(text: string): string {
@@ -46,7 +46,10 @@ export function buildPrompt(gameName: string, candidates: JudgeCandidate[]): { s
   const intro =
     "You screen search results for a personal catalog of 3D-printable accessories (inserts, organizers, trays, tokens, " +
     "miniatures, terrain, card holders, trackers, dice towers) for board games. Results come from keyword searches on " +
-    "3D-printing sites and Etsy, so many are unrelated things that merely share a word with the search term.\n\n";
+    "3D-printing sites and Etsy, so many are unrelated things that merely share a word with the search term.\n" +
+    "Use your general knowledge of board games, video games, miniatures lines, franchises and products: if a title names a " +
+    "specific game or product you recognise (e.g. ICE, Zombicide, Middle-Earth Strategy Battle Game, a Freebox router), " +
+    "judge it as being for THAT thing, not for a game that merely shares a word with it.\n\n";
 
   const rules = isMisc
     ? "This is the owner's \"Miscellaneous\" shelf: generic accessories NOT tied to any single game (dice towers, dice trays, " +

@@ -221,17 +221,19 @@ export async function scanGame(
 
   return outcomes.map((o) => ({
     ...o,
-    results: o.results.filter((r) => !autoHidden.has(r.url)).map((r) => ({ ...r, alreadySaved: savedUrls.has(r.url) })),
+    results: o.results.filter((r) => !autoHidden.has(r.url)).map((r) => ({ ...r, description: undefined, alreadySaved: savedUrls.has(r.url) })),
   }));
 }
 
 async function judgeNewResults(
   game: { id: number; name: string },
-  outcomes: { domain: string; results: { url: string; title: string }[] }[],
+  outcomes: { domain: string; results: { url: string; title: string; description?: string | null }[] }[],
   savedUrls: Set<string>
 ) {
   if (!shouldJudge(game.name) || !process.env.ANTHROPIC_API_KEY) return new Map<string, "different-game" | "off-topic">();
-  const all = outcomes.flatMap((o) => o.results.filter((r) => !savedUrls.has(r.url)).map((r) => ({ url: r.url, title: r.title, domain: o.domain })));
+  const all = outcomes.flatMap((o) =>
+    o.results.filter((r) => !savedUrls.has(r.url)).map((r) => ({ url: r.url, title: r.title, domain: o.domain, description: r.description }))
+  );
   if (all.length === 0) return new Map<string, "different-game" | "off-topic">();
   const known = new Set(
     (await prisma.discoveredPrint.findMany({ where: { gameId: game.id, url: { in: all.map((c) => c.url) } }, select: { url: true } })).map((r) => r.url)

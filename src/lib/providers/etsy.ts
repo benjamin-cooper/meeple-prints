@@ -4,6 +4,7 @@
  * 24-48 hours). This only hits `findAllListingsActive`, which is a public
  * endpoint, so no OAuth/user login is required, just the `x-api-key` header.
  */
+import { cleanDescription } from "./description";
 import { NON_3D_PRINT_PATTERN } from "./non-3d-print-terms";
 import type { ProviderCredentials, ProviderResult, SearchProvider } from "./types";
 
@@ -16,6 +17,7 @@ interface EtsyListing {
   listing_type?: string;
   num_favorers?: number;
   tags?: string[];
+  description?: string;
 }
 
 interface EtsyImage {
@@ -119,6 +121,11 @@ async function search(query: string, creds: ProviderCredentials): Promise<Provid
         rating: null,
         ratingCount: null,
         likesCount: listing.num_favorers ?? null,
+        // Tags are a seller's own category words, often clearer than the
+        // keyword-stuffed title; the description follows them.
+        description: cleanDescription(
+          [listing.tags?.length ? `Tags: ${listing.tags.slice(0, 12).join(", ")}.` : "", listing.description ?? ""].join(" ")
+        ),
       };
     })
   );

@@ -4,6 +4,7 @@
  * against api.printables.com; no key needed, but it's an internal API
  * Printables could change without notice.
  */
+import { cleanDescription } from "./description";
 import type { ProviderResult, SearchProvider } from "./types";
 
 const ENDPOINT = "https://api.printables.com/graphql/";
@@ -12,7 +13,7 @@ const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 const QUERY = `
   query SearchModels($query: String!, $limit: Int, $ordering: SearchChoicesEnum) {
     result: searchPrints2(query: $query, printType: print, limit: $limit, ordering: $ordering) {
-      items { id name slug ratingAvg ratingCount user { publicUsername } image { filePath } }
+      items { id name slug summary description ratingAvg ratingCount user { publicUsername } image { filePath } }
     }
   }
 `;
@@ -21,6 +22,8 @@ interface PrintablesItem {
   id: string;
   name: string;
   slug: string;
+  summary?: string | null;
+  description?: string | null;
   ratingAvg?: string | null;
   ratingCount?: number | null;
   user?: { publicUsername?: string };
@@ -57,6 +60,7 @@ async function search(query: string): Promise<ProviderResult[]> {
       rating: ratingAvg && ratingCount ? ratingAvg : null,
       ratingCount: ratingAvg && ratingCount ? ratingCount : null,
       likesCount: null,
+      description: cleanDescription(item.description) ?? cleanDescription(item.summary),
     };
   });
 }

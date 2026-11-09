@@ -21,6 +21,12 @@ export interface ProviderResult {
   ratingCount: number | null;
   /** Like/favorite count, for sites with no star-rating system (Thingiverse, Cults3D). */
   likesCount: number | null;
+  /**
+   * Short plain-text listing description (or tags), when the site's search
+   * returns one for free. Read by the AI screen at scan time and never stored
+   * or sent to the client.
+   */
+  description?: string | null;
 }
 
 export interface ProviderOutcome {

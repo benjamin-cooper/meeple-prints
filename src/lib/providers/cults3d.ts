@@ -4,16 +4,18 @@
  * HTTP Basic auth. Query shape confirmed against the community-maintained
  * docs at github.com/CheekyCodexConjurer/cults3d-api-docs.
  */
+import { cleanDescription } from "./description";
 import type { ProviderCredentials, ProviderResult, SearchProvider } from "./types";
 
 const ENDPOINT = "https://cults3d.com/graphql";
 
-const QUERY = `
+const buildQuery = (withDescription: boolean) => `
   query Search($query: String!, $limit: Int) {
     creationsSearchBatch(query: $query, limit: $limit) {
       results {
         name(locale: EN)
         url(locale: EN)
+        ${withDescription ? "description(locale: EN)" : ""}
         illustrationImageUrl
         price(currency: USD) { value }
         creator { nick }
@@ -25,6 +27,7 @@ const QUERY = `
 
 interface CultsResult {
   name: string;
+  description?: string | null;
   url: string;
   illustrationImageUrl?: string;
   price?: { value?: number } | null;
@@ -44,16 +47,27 @@ function isImageUrl(url: string | undefined): url is string {
 async function search(query: string, creds: ProviderCredentials): Promise<ProviderResult[]> {
   const authHeader = "Basic " + Buffer.from(`${creds.cultsUsername}:${creds.cultsApiKey}`).toString("base64");
 
-  const res = await fetch(ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: authHeader },
-    body: JSON.stringify({ query: QUERY, variables: { query, limit: 8 } }),
-    signal: AbortSignal.timeout(10_000),
-  });
-  if (res.status === 401) throw new Error("Cults3D login was rejected. Check your username and API key on the Connect page.");
-  if (!res.ok) throw new Error(`Cults3D search failed (${res.status})`);
+  const run = async (withDescription: boolean) => {
+    const res = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: authHeader },
+      body: JSON.stringify({ query: buildQuery(withDescription), variables: { query, limit: 8 } }),
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (res.status === 401) throw new Error("Cults3D login was rejected. Check your username and API key on the Connect page.");
+    return res;
+  };
 
-  const data = await res.json();
+  // The description field is only there for the AI screen. If this API ever
+  // rejects it (a schema change, a field I couldn't test without a key), fall
+  // back to the plain query so search itself never breaks over it.
+  let res = await run(true);
+  let data = res.ok ? await res.json() : null;
+  if (!res.ok || data?.errors?.length) {
+    res = await run(false);
+    if (!res.ok) throw new Error(`Cults3D search failed (${res.status})`);
+    data = await res.json();
+  }
   if (data.errors?.length) throw new Error(data.errors[0]?.message ?? "Cults3D search failed.");
 
   const results: CultsResult[] = data?.data?.creationsSearchBatch?.results ?? [];
@@ -71,6 +85,7 @@ async function search(query: string, creds: ProviderCredentials): Promise<Provid
       rating: null,
       ratingCount: null,
       likesCount: r.likesCount ?? null,
+      description: cleanDescription(r.description),
     };
   });
 }

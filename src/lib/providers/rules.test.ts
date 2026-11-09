@@ -58,6 +58,19 @@ const REAL: [game: string, title: string, domain?: string][] = [
   ["Recall", "Recall Boardgame Inlay", "thingiverse.com"],
   ["Heat: Pedal to the Metal", "Heat Pedal to the Metal + Expansions Compatible Board Game Organizer ***DIGITAL FILES ONLY***", "etsy.com"],
   ["Lost Ruins of Arnak", "Lost Ruins of Arnak Upgrades", "etsy.com"],
+  // Twenty-first audit: real titles for the games that gained rules.
+  ["Coup", "Coup Coins for card game"],
+  ["Coup", "Coup Usagyuuun 3D Organizer Insert Digital Files for 3D Printing", "etsy.com"],
+  ["Coup", "Coup Insert", "thingiverse.com"],
+  ["Parks", "Tenpenny Parks Insert/Organizer", "thingiverse.com"],
+  ["Parks", "PARKS w/expansions - Organizer Insert", "thingiverse.com"],
+  ["Sanctuary", "Sanctuary Insert"],
+  ["Sanctuary", "Verdant Sanctuary Can Holder & Dice Tower", "cults3d.com"],
+  ["Sanctuary", "Artengarten / Sanctuary Boardgame Box Insert"],
+  ["The Gang", "The Gang - small gamebox insert", "thingiverse.com"],
+  ["Hibachi", "Hibachi insert (including Hot & Spicy + Fried Egg)", "thingiverse.com"],
+  ["Wine & Cheese", "Wine & Cheese Insert"],
+  ["Sand", "Sand Player Board Overlay", "etsy.com"],
 ];
 
 const JUNK: [game: string, title: string, domain?: string][] = [
@@ -73,6 +86,18 @@ const JUNK: [game: string, title: string, domain?: string][] = [
   ["Sanctuary", "Lemurian Forest Sanctuary | Deep Healing | Nature Goddess Phone", "etsy.com"],
   ["Falling", "Falling Leaves Handprint Art, Preschool Fall Activity, Printable Poem Craft", "etsy.com"],
   ["Iliad", "ZIMABLADE NAS - ILIAD BOX STYLE", "printables.com"],
+  // Twenty-first audit: results hidden by hand that no rule used to catch.
+  ["Ants", "Giant Ants", "printables.com"],
+  ["Coup", "One Flew the Coup", "etsy.com"],
+  ["Falling", "Animated Falling Snow Video Overlay for Photoshop", "etsy.com"],
+  ["Hibachi", "1:12 miniature Low table inspired by Hibachi Table 3d stl file", "cults3d.com"],
+  ["Parks", "GreebleCity Set 02: Parks and Recreation", "cults3d.com"],
+  ["Sanctuary", "Archway Sanctuary", "printables.com"],
+  ["Sanctuary", "Hornet Hollow Knight STL – Forest Sanctuary Guardian Collector Statue 3D Print Model", "etsy.com"],
+  ["The Gang", "The Gang from \"Its Always Sunny in Philadelphia\" - The Night Man Cometh D&D Miniature Set", "cults3d.com"],
+  ["Ticket to Ride", "Santa Sleigh Ride Boarding Pass Personalized, Golden Ticket to North Pole, Christmas Eve Box Printable, Kids Ticket", "etsy.com"],
+  ["Wine & Cheese", "wine This or That Game,wine Would You Rather,wine Party Game,wine cheese tasting,wine trivia game", "etsy.com"],
+  ["Lisboa", "Lisboa Tram OcCre 1/24 spare parts", "thingiverse.com"],
   ["Iliad", "Cable cover box for Iliad Box", "thingiverse.com"],
   ["Iliad", "Iliad Box vertical stand", "printables.com"],
   ["Lisboa", "Lisboa Tram OcCre 1/24 spare parts", "thingiverse.com"],

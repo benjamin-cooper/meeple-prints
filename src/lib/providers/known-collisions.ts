@@ -159,7 +159,7 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // listing ("Press Gang Stockade Terrain"), same generic-hobby shape as
   // the terrain terms elsewhere in this file. Verified against this
   // game's own 10 currently-correct results first -- none use this word.
-  "The Gang": /\ba-team\b|\bscooby\b|doctor who|paternoster|little rascals|\bfreshies\b|villain gang|girl gang|raccoon gang|dachshund gang|\bterrain\b/i,
+  "The Gang": /\ba-team\b|\bscooby\b|doctor who|paternoster|little rascals|\bfreshies\b|villain gang|girl gang|raccoon gang|dachshund gang|\bterrain\b|always sunny|\bd&d\b|\bdnd\b/i,
   // "tyres?/tires?" added in the fifth audit -- Yokohama is a real tire
   // brand, which turned out to be the dominant collision (Porsche racing
   // wheels, tire logos), plus travel-guide content for the actual city.
@@ -205,7 +205,7 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // real matches DB-wide, all for the unrelated game "Lost Ruins of
   // Arnak" -- harmless here since this exclusion only ever runs against
   // Sanctuary's own search results, never Arnak's.
-  Sanctuary: /cthulhu|sisters of battle|sky children of (the )?light|rocamadour|\bterrain\b|\bruins?\b|\bdnd\b|d&d|rpg scenery/i,
+  Sanctuary: /cthulhu|sisters of battle|sky children of (the )?light|rocamadour|\bterrain\b|\bruins?\b|\bdnd\b|d&d|rpg scenery|hollow knight|archway|\bdioramas?\b|\bcathedral\b|\bgothic\b|\baltar\b|\bgolem\b|\bpedestal\b|\bsculpture\b|\bfireplace\b|\bcastle\b|\btemple\b/i,
   // Entropy has zero currently-correct results ever, same as "Sand" --
   // it's a real thermodynamics term, so the noise splits between literal
   // physics/chemistry content ("T-s diagram", "enthalpy") and several
@@ -255,10 +255,10 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // ever, same shape as Sand/Entropy/Ruins: it's a real insect, so Etsy/
   // Printables/Thingiverse/Cults3D surface actual ant-keeping/pest-control
   // hobbyist prints (ant farms, feeder tubes, anti-ant cat-food bowls) on
-  // name alone. Deliberately skipped a few generic titles ("Giant Ants",
-  // "Terminal Ants", "Ants Mini") that could plausibly be real game
-  // miniatures rather than noise, same caution as the rest of this group.
-  Ants: /ant farm|ants? nest|anti-?ants|ameisenbuffet|ants?[- ]?keeper|bait holder|worker ants|ants?[- ]buffet|ants logo|rick and morty|\btrough\b/i,
+  // name alone. "Giant Ants" was skipped at first as a plausible miniature,
+  // then hidden by hand as not board-game related, so it's excluded now;
+  // "Terminal Ants" and "Ants Mini" are still left alone.
+  Ants: /\bgiant ants?\b|ant farm|ants? nest|anti-?ants|ameisenbuffet|ants?[- ]?keeper|bait holder|worker ants|ants?[- ]buffet|ants logo|rick and morty|\btrough\b/i,
   // Eleventh audit (2026-08-15) -- six more games added after a large manual
   // hide pass surfaced clear, repeating collision clusters rather than
   // scattered noise. Each verified against every currently-visible row for
@@ -306,7 +306,11 @@ export const KNOWN_COLLISION_EXCLUSIONS: Record<string, RegExp> = {
   // (its own tagline/vacation-planning vocabulary), and romance novelist
   // Eliza Parks (her full name, not a real risk of matching a genuine
   // insert title).
-  Parks: /eliza parks|disney|rosa parks/i,
+  Parks: /eliza parks|disney|rosa parks|greeblecity|parks (and|&) rec(reation)?\b|ron swanson|\bsam parks\b/i,
+  // Coup collides with chicken coops, car-maker manuals (Audi/BMW "Coupe"
+  // listings), "coup de ..." phrases, cookie cutters, and political signs.
+  // Twenty-first audit; no currently-visible Coup result uses any of these.
+  Coup: /chicken coup|flew the coup|coup de |\baudi\b|\bbmw\b|workshop|service manual|cookie|midnight coup/i,
   // Lisboa (the board game, named for the city) collides with the city's
   // two football clubs, Benfica and Sporting CP -- team logos, stadium
   // models, signed photos.
@@ -392,7 +396,7 @@ export const WARGAMING_SCALE_PATTERN = /\d+\s*mm\s*scale/i;
  * vocabulary. Verified zero matches across all 1423 currently-visible
  * results, every game, every domain.
  */
-export const DOLLHOUSE_MINIATURE_PATTERN = /book nooks?|dollhouse/i;
+export const DOLLHOUSE_MINIATURE_PATTERN = /book nooks?|dollhouse|\b1\s?[:/]\s?(12|24)\b/i;
 
 /**
  * Twentieth audit: for games whose name is an ordinary English word, almost
@@ -413,10 +417,18 @@ export const DOLLHOUSE_MINIATURE_PATTERN = /book nooks?|dollhouse/i;
 export const ETSY_SIGNAL_REQUIRED_GAMES = new Set([
   "Recall", "Sanctuary", "Falling", "Inferno", "Covenant", "Ruins", "Earth", "Sand", "The Gang",
   "Speakeasy", "Tag Team", "Luthier", "Ants", "Forestry", "Daybreak", "The Anarchy", "Funfair",
+  // Twenty-first audit: 23 more games whose hidden Etsy rows were almost all
+  // content-type junk and whose visible Etsy rows all match the signal. Left
+  // out on purpose: popular games with many non-English listings (Ticket to
+  // Ride, Quacks, Cubitos, River of Gold) -- the signal is English-only.
+  "Parks", "Wine & Cheese", "Hibachi", "Yokohama", "Tea Garden", "Entropy", "Distilled", "Arcs",
+  "Black Forest", "Galileo Galilei", "Lisboa", "Emberheart", "Emberleaf", "The Game Makers", "Flip 7",
+  "Tea Witches", "Welcome to the Moon", "Coup", "The White Castle", "Tend", "Unconscious Mind",
+  "Wondrous Creatures", "Lacrimosa",
 ]);
 
 export const ETSY_PRINT_SIGNAL =
-  /\bstl\b|\b3mf\b|\b3d\b|3-d|\bobj\b|print[- ]?in[- ]?place|\bgcode\b|insert|organi[sz]er|\btray\b|\btoken|\bholder\b|\bbox\b|\bstorage\b|\bcaddy\b|\bgridfinity\b|\bminiature|\bmini(s)?\b|\bfigure|\bstatue|\bbust\b|\bterrain\b|\bdice\b|\bmeeple|\bcoin|\bmodel\b|\bupgrade|\binlay|\boverlay|\bboard game\b/i;
+  /\bstl\b|\b3mf\b|\b3d\b|3-d|\bobj\b|print[- ]?in[- ]?place|\bgcode\b|insert|organi[sz]er|\btray\b|\btoken|\bholder\b|\bbox\b|\bstorage\b|\bcaddy\b|\bgridfinity\b|\bminiature|\bmini(s)?\b|\bfigure|\bstatue|\bbust\b|\bterrain\b|\bdice\b|\bmeeple|\bcoin|\bmodel\b|\bupgrade|\binlay|(player|board|dashboard|tile|mat)s?[ -]?overlays?|\bboard game\b/i;
 
 export function failsEtsyPrintSignal(gameName: string, domain: string, title: string): boolean {
   return domain === "etsy.com" && ETSY_SIGNAL_REQUIRED_GAMES.has(gameName) && !ETSY_PRINT_SIGNAL.test(title);

@@ -133,6 +133,13 @@ export const NON_3D_PRINT_TERM_GROUPS: ExclusionGroup[] = [
     terms: [
       "mockups?", "(procreate|photoshop|ps)\\s*brush(es)?", "brushe?s?:?\\s*(procreate|photoshop)",
       "photoshop overlays?", "photo overlays?", "lightroom presets?", "stock photos?",
+      // Twenty-first audit: "Falling Snow Video Overlay for Photoshop" slipped
+      // past because bare "overlay" was an Etsy print signal. Bare
+      // "photoshop" and video/transparent overlay packs are never STL files;
+      // "boarding pass", "golden ticket" and "gift certificate" are paper
+      // gift printables (the Ticket to Ride collision). Zero visible hits.
+      "video overlays?", "\\bphotoshop\\b", "transparent overlays?", "overlays? pack",
+      "boarding pass", "golden ticket", "gift certificate",
       // Bare "png" added in the fourteenth audit -- a real STL/3D-print
       // seller says "STL"/"3MF"/"3D print files", never the raster image
       // format a flat digital-art listing ships as. Verified against every

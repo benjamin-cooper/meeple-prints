@@ -40,7 +40,7 @@ export async function GET() {
   const notYetSaved = discovered
     .filter((d) => !savedUrls.has(d.url))
     // Applied at read time so rows found before this rule existed disappear
-    // from view immediately (the weekly cleanup then deletes them).
+    // from view immediately (the nightly cleanup then deletes them).
     .filter((d) => !(d.game.bggId === MISC_GAME_BGG_ID && isGameSpecificMiscResult(d.title)))
     .map((d) => ({
       id: d.id,

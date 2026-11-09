@@ -35,15 +35,17 @@ export async function GET(request: NextRequest) {
     return null;
   });
 
-  // Weekly (Sundays, UTC): delete hidden rows that a shipped rule already
-  // explains. Used to be a manual script that had to be remembered after
-  // every rules change; the Hidden page's "explained" verdicts and this use
-  // the same explainHiddenRows, so nothing unexplained is ever touched.
-  let tombstonesDeleted: number | null = null;
-  if (new Date().getUTCDay() === 0) {
+  // Every run: delete hidden rows that a shipped rule already explains. Used
+  // to be a manual script, then Sunday-only -- which made "did it run?"
+  // depend on the day in UTC and on a manual Run landing inside that day.
+  // It's one cheap read and a no-op when nothing is explained; the Hidden
+  // page's "explained" verdicts and this use the same explainHiddenRows, so
+  // nothing unexplained is ever touched. Skipped if the sync ate the budget.
+  let tombstonesDeleted: number | "failed" | "skipped" = "skipped";
+  if (Date.now() - cronStart < 15_000) {
     tombstonesDeleted = await runTombstoneCleanup().catch((err) => {
       console.error("[cron] tombstone cleanup failed:", err instanceof Error ? err.message : err);
-      return null;
+      return "failed" as const;
     });
   }
 
@@ -75,7 +77,7 @@ export async function GET(request: NextRequest) {
   console.log(
     `[cron] ok: scanned ${result.scanned} games (${result.newPrints} new prints), ` +
       `misc ${miscScanned ? "scanned" : "skipped"}, ` +
-      `tombstones ${tombstonesDeleted === null ? "not due" : `deleted ${tombstonesDeleted}`}, ` +
+      `tombstones ${typeof tombstonesDeleted === "number" ? `deleted ${tombstonesDeleted}` : tombstonesDeleted}, ` +
       `sync ${sync ? (sync.dropDetectionSkipped ? `skipped drops (${sync.dropDetectionSkipped.reason})` : `${sync.imported} games`) : "none"}, ` +
       `${Math.round((Date.now() - cronStart) / 1000)}s`
   );

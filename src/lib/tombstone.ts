@@ -5,7 +5,7 @@
  * Anything unexplained stays hidden -- `hidden` is the only thing keeping
  * the @@unique([gameId, url]) upsert from re-inserting it on the next scan.
  *
- * Shared by scripts/tombstone-cleanup.ts (manual) and the weekly cron.
+ * Shared by scripts/tombstone-cleanup.ts (manual) and the nightly cron.
  */
 import { prisma } from "@/lib/prisma";
 import { MISC_GAME_NAME } from "@/lib/constants";
@@ -32,6 +32,10 @@ export async function runTombstoneCleanup(): Promise<number> {
   }
   if (ids.size === 0) return 0;
 
-  await prisma.discoveredPrint.deleteMany({ where: { id: { in: [...ids] } } });
-  return ids.size;
+  // Chunked so a big first cleanup can't exceed SQLite's bound-variable limit.
+  const all = [...ids];
+  for (let i = 0; i < all.length; i += 500) {
+    await prisma.discoveredPrint.deleteMany({ where: { id: { in: all.slice(i, i + 500) } } });
+  }
+  return all.length;
 }

@@ -11,6 +11,8 @@
 import { scanNextBatch, scanMiscIfStale, DEFAULT_BATCH_TIME_BUDGET_MS } from "@/lib/scan";
 import { syncBggCollection } from "@/lib/collection-sync";
 import { runTombstoneCleanup } from "@/lib/tombstone";
+import { backfillEtsyThumbnails } from "@/lib/providers/etsy";
+import { getProviderCredentials } from "@/lib/providers/env-credentials";
 import { prisma } from "@/lib/prisma";
 import type { NextRequest } from "next/server";
 
@@ -63,6 +65,16 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(process.env.AUTO_SCAN_BATCH_SIZE ?? "20") || 20;
   const result = await scanNextBatch(limit, remainingBudget);
 
+  // Etsy rate-limits image lookups; any result stored without a picture gets
+  // another try here, spaced out, while there's still time on the clock.
+  let etsyImagesFilled = 0;
+  if (Date.now() - cronStart < 50_000) {
+    etsyImagesFilled = await backfillEtsyThumbnails(getProviderCredentials()).catch((err) => {
+      console.error("[cron] etsy image backfill failed:", err instanceof Error ? err.message : err);
+      return 0;
+    });
+  }
+
   // Only the real scheduled cron sets this -- not the manual "Scan now"
   // button or a one-off script -- so it reflects whether Vercel's
   // scheduler is actually still firing, not just whether scanning happened.
@@ -76,7 +88,7 @@ export async function GET(request: NextRequest) {
   // actually ran, not just when something failed.
   console.log(
     `[cron] ok: scanned ${result.scanned} games (${result.newPrints} new prints), ` +
-      `misc ${miscScanned ? "scanned" : "skipped"}, ` +
+      `misc ${miscScanned ? "scanned" : "skipped"}, etsy images filled ${etsyImagesFilled}, ` +
       `tombstones ${typeof tombstonesDeleted === "number" ? `deleted ${tombstonesDeleted}` : tombstonesDeleted}, ` +
       `sync ${sync ? (sync.dropDetectionSkipped ? `skipped drops (${sync.dropDetectionSkipped.reason})` : `${sync.imported} games`) : "none"}, ` +
       `${Math.round((Date.now() - cronStart) / 1000)}s`

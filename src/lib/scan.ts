@@ -205,9 +205,12 @@ export async function scanGame(
           likesCount: r.likesCount,
         };
         const reason = autoHidden.get(r.url);
+        // A lookup that came back empty (e.g. rate-limited) must not erase an
+        // image stored by an earlier scan.
+        const { thumbnailUrl, ...dataWithoutThumbnail } = data;
         return prisma.discoveredPrint.upsert({
           where: { gameId_url: { gameId: game.id, url: r.url } },
-          update: data,
+          update: thumbnailUrl ? data : dataWithoutThumbnail,
           create: {
             gameId: game.id, url: r.url, ...data,
             ...(reason ? { hidden: true, hideReason: `auto:${reason === "different-game" ? "wrong-game" : "off-topic"}` } : {}),

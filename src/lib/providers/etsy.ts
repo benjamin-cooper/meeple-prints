@@ -4,6 +4,7 @@
  * 24-48 hours). This only hits `findAllListingsActive`, which is a public
  * endpoint, so no OAuth/user login is required, just the `x-api-key` header.
  */
+import { prisma } from "../prisma";
 import { cleanDescription } from "./description";
 import { NON_3D_PRINT_PATTERN } from "./non-3d-print-terms";
 import type { ProviderCredentials, ProviderResult, SearchProvider } from "./types";
@@ -58,12 +59,35 @@ function isLikely3DPrintFile(listing: EtsyListing): boolean {
 // fully working image data when queried directly seconds later. One retry
 // after a short delay covers the common transient case without adding much
 // latency to a search that's already making several of these calls.
+//
+// The real cause, measured live: Etsy allows 5 requests per second
+// (x-limit-per-second: 5). A burst of 8 parallel image calls gets 3 HTTP 429s;
+// the same 8 spaced ~150ms apart all succeed. Miscellaneous runs 13 searches
+// at once (up to ~100 image calls in a burst), so nearly every new Etsy
+// result from that scan came back with no image and the one retry hit the
+// same wall. So: every image call now waits for a slot ~4.5 calls/s apart,
+// stored thumbnails are reused instead of re-fetched, and a cron step
+// (backfillEtsyThumbnails) fills in any that still miss.
+const IMAGE_CALL_GAP_MS = 220;
+let nextImageSlot = 0;
+
+async function imageSlot(): Promise<void> {
+  const now = Date.now();
+  const at = Math.max(now, nextImageSlot);
+  nextImageSlot = at + IMAGE_CALL_GAP_MS;
+  if (at > now) await new Promise((r) => setTimeout(r, at - now));
+}
+
 async function fetchThumbnailOnce(listingId: number, apiKey: string): Promise<string | null> {
+  await imageSlot();
   const res = await fetch(`https://api.etsy.com/v3/application/listings/${listingId}/images`, {
     headers: { "x-api-key": apiKey },
     signal: AbortSignal.timeout(10_000),
   });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    console.error(`[etsy] image lookup for listing ${listingId} failed (${res.status})`);
+    return null;
+  }
   const data = await res.json();
   const image: EtsyImage | undefined = data?.results?.[0];
   return image?.url_570xN ?? image?.url_170x135 ?? null;
@@ -80,6 +104,57 @@ async function fetchThumbnail(listingId: number, apiKey: string): Promise<string
     }
   }
   return null;
+}
+
+/**
+ * Thumbnails already stored for these listing URLs (saved prints and
+ * discovered results). Most results in a scan were seen before, so reusing
+ * them avoids most image calls -- the thing Etsy rate-limits. A lookup that
+ * fails just means every image gets fetched, as before.
+ */
+async function storedThumbnails(urls: string[]): Promise<Map<string, string>> {
+  const known = new Map<string, string>();
+  if (urls.length === 0) return known;
+  try {
+    const where = { url: { in: urls }, thumbnailUrl: { not: null } };
+    const select = { url: true, thumbnailUrl: true };
+    const [discovered, saved] = await Promise.all([
+      prisma.discoveredPrint.findMany({ where, select }),
+      prisma.product.findMany({ where, select }),
+    ]);
+    for (const row of [...discovered, ...saved]) if (row.thumbnailUrl) known.set(row.url, row.thumbnailUrl);
+  } catch {
+    // fall through with whatever was found
+  }
+  return known;
+}
+
+/**
+ * Fills in thumbnails for Etsy results that were stored without one (a
+ * rate-limited lookup during a scan). Run from the nightly cron, a few at a
+ * time, newest first, spaced out by the same image gate as scans. Returns how
+ * many got an image.
+ */
+export async function backfillEtsyThumbnails(creds: ProviderCredentials, limit = 15): Promise<number> {
+  if (!creds.etsyKeystring || !creds.etsySharedSecret) return 0;
+  const apiKey = `${creds.etsyKeystring}:${creds.etsySharedSecret}`;
+  const missing = await prisma.discoveredPrint.findMany({
+    where: { domain: "etsy.com", hidden: false, thumbnailUrl: null },
+    orderBy: { firstSeenAt: "desc" },
+    select: { url: true },
+    distinct: ["url"],
+    take: limit,
+  });
+  let filled = 0;
+  for (const { url } of missing) {
+    const id = url.match(/\/listing\/(\d+)/)?.[1];
+    if (!id) continue;
+    const thumbnailUrl = await fetchThumbnail(Number(id), apiKey);
+    if (!thumbnailUrl) continue;
+    await prisma.discoveredPrint.updateMany({ where: { url, thumbnailUrl: null }, data: { thumbnailUrl } });
+    filled++;
+  }
+  return filled;
 }
 
 async function search(query: string, creds: ProviderCredentials): Promise<ProviderResult[]> {
@@ -105,6 +180,8 @@ async function search(query: string, creds: ProviderCredentials): Promise<Provid
     .filter((listing) => listing.listing_type === "download" && isLikely3DPrintFile(listing))
     .slice(0, RESULT_LIMIT);
 
+  const known = await storedThumbnails(digital.map((listing) => listing.url));
+
   return Promise.all(
     digital.map(async (listing) => {
       const amount = listing.price?.amount ?? 0;
@@ -113,7 +190,7 @@ async function search(query: string, creds: ProviderCredentials): Promise<Provid
       return {
         url: listing.url,
         title: listing.title,
-        thumbnailUrl: await fetchThumbnail(listing.listing_id, apiKey),
+        thumbnailUrl: known.get(listing.url) ?? (await fetchThumbnail(listing.listing_id, apiKey)),
         creator: null,
         price,
         currency: listing.price?.currency_code ?? "USD",
